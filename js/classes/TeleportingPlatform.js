@@ -18,6 +18,10 @@ class TeleportingPlatform {
         // Track current state (true = at point A, false = at point B)
         this.atPointA = true;
 
+        // Outline settings
+        this.outlineStrokeWeight = 2;
+        this.outlineDashPattern = [10, 10]; // [dash length, gap length]
+
         // Create the sprite
         this.sprite = new platformGroup.Sprite();
         this.sprite.x = this.pointA.x;
@@ -32,6 +36,42 @@ class TeleportingPlatform {
     setSize(w, h) {
         this.sprite.width = w;
         this.sprite.height = h;
+    }
+
+    // Draw a dotted rectangle outline at the alternate position
+    drawAlternateOutline() {
+        // Get the alternate position and dimensions
+        let altPos, altDim, altColor;
+        if (this.atPointA) {
+            altPos = this.pointB;
+            altDim = this.dimB;
+            altColor = this.colorB;
+        } else {
+            altPos = this.pointA;
+            altDim = this.dimA;
+            altColor = this.colorA;
+        }
+
+        // Save current drawing state
+        push();
+        
+        // Set up the dotted line style
+        stroke(altColor);
+        strokeWeight(this.outlineStrokeWeight);
+        noFill();
+        
+        // Set the dash pattern using drawingContext
+        drawingContext.setLineDash(this.outlineDashPattern);
+        
+        // Draw rectangle (centered like p5play sprites)
+        rectMode(CENTER);
+        rect(altPos.x, altPos.y, altDim.width, altDim.height);
+        
+        // Reset dash pattern
+        drawingContext.setLineDash([]);
+        
+        // Restore drawing state
+        pop();
     }
 
     // Toggle between point A and point B
@@ -60,5 +100,8 @@ class TeleportingPlatform {
         if (kb.presses('shift')) {
             this.teleport();
         }
+        
+        // Draw the alternate position outline
+        this.drawAlternateOutline();
     }
 }

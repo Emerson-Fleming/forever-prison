@@ -19,19 +19,36 @@ class Game {
     }
 
     // Set up the world with gravity
-    setupWorld(gravityY = 20) {
+    initializeGravity(gravityY = 20) {
         world.gravity.y = gravityY;
     }
 
     // Create a basic ground platform
     createGround(color = 'green') {
-        let ground = new this.platforms.Sprite();
-        ground.x = width / 2;
-        ground.y = height - 25;
-        ground.width = width;
-        ground.height = 50;
-        ground.color = color;
-        return ground;
+        // Store reference to ground for resizing
+        if (!this.ground) {
+            this.ground = new this.platforms.Sprite();
+            this.ground.collider = 'static';
+        }
+        this.ground.x = width / 2;
+        this.ground.y = height - 25;
+        this.ground.width = width;
+        this.ground.height = 50;
+        this.ground.color = color;
+
+        // Add resize listener only once
+        if (!this._resizeListenerAdded) {
+            window.addEventListener('resize', () => {
+                // Update ground size and position on resize
+                this.ground.x = width / 2;
+                this.ground.y = height - 25;
+                this.ground.width = width;
+                this.ground.height = 50;
+            });
+            this._resizeListenerAdded = true;
+        }
+
+        return this.ground;
     }
 
     // Create a static platform
@@ -75,7 +92,7 @@ class Game {
 let game = new Game();
 
 // Prevent default browser behavior for game keys (stops page scrolling)
-window.addEventListener('keydown', function(e) {
+window.addEventListener('keydown', function (e) {
     // Prevent scrolling for spacebar, arrow keys
     if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
         e.preventDefault();

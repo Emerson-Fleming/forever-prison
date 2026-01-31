@@ -10,7 +10,7 @@ function setup() {
 
     // Initialize game
     game.init();
-    game.setupWorld(20);
+    game.initializeGravity(20);
 
     // Create player
     game.createPlayer(width - 500, height / 2, {
@@ -48,7 +48,7 @@ function setup() {
         height: 50,
         color: 'gold'
     });
-    
+
     // Register the pullable object with the player
     game.player.addPullableObject(pullableBox);
 }

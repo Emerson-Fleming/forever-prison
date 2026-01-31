@@ -9,7 +9,7 @@ function setup() {
 
     // Initialize game
     game.init();
-    game.setupWorld(20);
+    game.initializeGravity(20);
 
     // Create player
     game.createPlayer(100, height / 2, {

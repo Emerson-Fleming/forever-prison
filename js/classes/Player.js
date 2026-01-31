@@ -16,6 +16,10 @@ class Player {
         this.moveSpeed = options.moveSpeed || 5;
         this.jumpForce = options.jumpForce || 8;
 
+        // Coyote time settings (allows jumping shortly after leaving platform)
+        this.coyoteTime = options.coyoteTime || 150; // milliseconds
+        this.lastGroundedTime = 0;
+
         // Reference to platforms for collision detection
         this.platforms = null;
     }
@@ -25,8 +29,26 @@ class Player {
         this.platforms = platformGroup;
     }
 
+    // Check if player can jump (on ground or within coyote time)
+    canJump() {
+        // Currently on a platform
+        if (this.platforms && this.sprite.colliding(this.platforms)) {
+            return true;
+        }
+        // Within coyote time window
+        if (millis() - this.lastGroundedTime < this.coyoteTime) {
+            return true;
+        }
+        return false;
+    }
+
     // Handle player movement input
     handleMovement() {
+        // Track when player was last on ground
+        if (this.platforms && this.sprite.colliding(this.platforms)) {
+            this.lastGroundedTime = millis();
+        }
+
         // Horizontal movement
         if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) { // Left or A
             this.sprite.velocity.x = -this.moveSpeed;
@@ -38,9 +60,11 @@ class Player {
 
         // Jump control
         if (kb.presses('space') || kb.presses('w') || kb.presses('up_arrow')) {
-            // Only jump if player is on a platform
-            if (this.platforms && this.sprite.colliding(this.platforms)) {
+            // Can jump if on platform OR within coyote time
+            if (this.canJump()) {
                 this.sprite.velocity.y = -this.jumpForce;
+                // Reset coyote time after jumping so they can't double jump
+                this.lastGroundedTime = 0;
             }
         }
     }

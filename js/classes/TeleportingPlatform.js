@@ -54,22 +54,22 @@ class TeleportingPlatform {
 
         // Save current drawing state
         push();
-        
+
         // Set up the dotted line style
         stroke(altColor);
         strokeWeight(this.outlineStrokeWeight);
         noFill();
-        
+
         // Set the dash pattern using drawingContext
         drawingContext.setLineDash(this.outlineDashPattern);
-        
+
         // Draw rectangle (centered like p5play sprites)
         rectMode(CENTER);
         rect(altPos.x, altPos.y, altDim.width, altDim.height);
-        
+
         // Reset dash pattern
         drawingContext.setLineDash([]);
-        
+
         // Restore drawing state
         pop();
     }
@@ -100,7 +100,7 @@ class TeleportingPlatform {
         if (kb.presses('shift')) {
             this.teleport();
         }
-        
+
         // Draw the alternate position outline
         this.drawAlternateOutline();
     }

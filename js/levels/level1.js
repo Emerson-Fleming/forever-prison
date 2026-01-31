@@ -11,7 +11,7 @@ function setup() {
     game.setupWorld(20);
 
     // Create player
-    game.createPlayer(width / 2, height / 2, {
+    game.createPlayer(width - 500, height / 2, {
         color: 'green',
         moveSpeed: 5,
         jumpForce: 8
@@ -21,11 +21,20 @@ function setup() {
     game.createGround('green');
 
     // Create teleporting platform
-    teleportingPlatform = new TeleportingPlatform(
-        { x: width / 4, y: height - 200 },       // Point A position
-        { x: (3 * width) / 4, y: height - 350 }, // Point B position
+    teleportingPlatform1 = new TeleportingPlatform(
+        { x: width - 500, y: height - 200 },       // Point A position
+        { x: width - 300, y: height - 200 },       // Point B position
         { width: 150, height: 20 },              // Point A dimensions
-        { width: 500, height: 100 },             // Point B dimensions
+        { width: 150, height: 20 },            // Point B dimensions
+        'purple',                                 // Point A color
+        'orange',                                 // Point B color
+        game.platforms                            // Platform group
+    );
+    teleportingPlatform2 = new TeleportingPlatform(
+        { x: width - 100, y: height - 200 },       // Point A position
+        { x: (3 * width) / 2, y: height - 350 }, // Point B position
+        { width: 150, height: 20 },              // Point A dimensions
+        { width: 150, height: 20 },          // Point B dimensions
         'purple',                                 // Point A color
         'orange',                                 // Point B color
         game.platforms                            // Platform group
@@ -47,7 +56,8 @@ function draw() {
     game.player.update();
 
     // Update teleporting platform
-    teleportingPlatform.update();
+    teleportingPlatform1.update();
+    teleportingPlatform2.update();
 
     // Check if player fell
     game.checkPlayerFell(width / 2, height / 2);

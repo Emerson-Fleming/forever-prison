@@ -73,3 +73,11 @@ class Game {
 
 // Global game instance
 let game = new Game();
+
+// Prevent default browser behavior for game keys (stops page scrolling)
+window.addEventListener('keydown', function(e) {
+    // Prevent scrolling for spacebar, arrow keys
+    if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
+        e.preventDefault();
+    }
+});

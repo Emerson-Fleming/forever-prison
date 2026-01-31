@@ -62,7 +62,7 @@ function draw() {
         'Level 1 - Use Arrow Keys or WASD to move',
         'Press Space to Jump',
         'Press Shift to toggle the teleporting platform',
-        'Press E to shoot tongue and grab objects'
+        'Click to shoot tongue toward cursor'
     ]);
 
     // Update player

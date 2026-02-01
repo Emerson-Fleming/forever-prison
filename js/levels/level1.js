@@ -63,6 +63,15 @@ function setup() {
     game.init();
     game.initializeGravity(20);
 
+    // Enable camera scrolling
+    game.enableCamera({
+        scrollThresholdRight: 0.8,  // Scroll when player is in right 20%
+        scrollThresholdLeft: 0.2,   // Scroll when player is in left 20%
+        scrollSpeed: 0.15,           // Smooth following
+        minX: 0,                     // Don't scroll past left edge
+        maxX: null                   // No right limit (unlimited scrolling)
+    });
+
     createLevelGeometry();
     createLevelEntities();
     setupRestartCallback();
@@ -72,6 +81,9 @@ function draw() {
     game.createPaperBackground();
 
     if (!game.isGameOver) {
+        // Update camera to follow player
+        game.updateCamera();
+
         game.showInstructions(Level1Config.instructions);
 
         game.player.update();
@@ -140,6 +152,21 @@ function createLevelGeometry() {
         'pink',
         game.platforms
     );
+
+    // Add platforms to the right for scrolling demonstration
+    const groundY = height - 50;
+    
+    // Platform 1 - floating platform
+    new StaticPlatform(600, groundY - 100, 150, 20, 'brown', game.platforms, false);
+    
+    // Platform 2 - higher platform
+    new StaticPlatform(850, groundY - 200, 120, 20, 'brown', game.platforms, false);
+    
+    // Platform 3 - far right
+    new StaticPlatform(1100, groundY - 150, 150, 20, 'brown', game.platforms, false);
+    
+    // Platform 4 - very far right
+    new StaticPlatform(1400, groundY - 180, 120, 20, 'brown', game.platforms, false);
 }
 
 /**

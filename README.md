@@ -99,6 +99,24 @@ The main game manager. Use it to:
 - `game.createHealthBar(maxHealth, options)` - Create health display
 - `game.createPaperBackground()` - Draw textured background
 - `game.createWallTexture(w, h)` - Generate wall texture
+- `game.enableCamera(options)` - Enable camera scrolling
+- `game.updateCamera()` - Update camera position (call in draw loop)
+
+#### Camera Scrolling
+Enable smooth camera scrolling that follows the player:
+
+```javascript
+game.enableCamera({
+    scrollThresholdRight: 0.8,  // Scroll when player enters right 20% of screen
+    scrollThresholdLeft: 0.2,   // Scroll when player enters left 20% of screen
+    scrollSpeed: 0.15,           // Smoothing (0-1, higher = faster)
+    minX: 0,                     // Left boundary (don't scroll past this)
+    maxX: 2000,                  // Right boundary (null for unlimited)
+    followY: false               // Whether to follow player vertically
+});
+```
+
+Then call `game.updateCamera()` in your draw loop.
 
 ### Player
 Player with movement, jumping, wall jumping, and tongue mechanics:

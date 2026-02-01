@@ -53,6 +53,15 @@ function setup() {
     game.init();
     game.initializeGravity(20);
 
+    // Enable camera for level 2
+    game.enableCamera({
+        scrollThresholdRight: 0.8,
+        scrollThresholdLeft: 0.2,
+        scrollSpeed: 0.15,
+        minX: 0,
+        maxX: 1000  // Set a right boundary for level 2
+    });
+
     createLevelGeometry();
     createLevelEntities();
     setupRestartCallback();
@@ -61,6 +70,9 @@ function setup() {
 function draw() {
     // Simple background for level 2
     background(180, 200, 220);
+
+    // Update camera
+    game.updateCamera();
 
     game.showInstructions(Level2Config.instructions);
 

@@ -226,13 +226,17 @@ class HealthBar {
     }
 
     /**
-     * Draw the health bar
+     * Draw the health bar (fixed to screen, not world)
      */
     draw() {
         push();
+        // Calculate screen position in world coordinates
+        const screenLeft = camera.x - width / 2;
+        const screenTop = camera.y - height / 2;
+        
         for (let i = 0; i < this.maxHealth; i++) {
-            const heartX = this.x + (i * (this.heartSize + this.heartSpacing));
-            const heartY = this.y;
+            const heartX = screenLeft + this.x + (i * (this.heartSize + this.heartSpacing));
+            const heartY = screenTop + this.y;
             const filled = i < this.currentHealth;
             this.drawHeart(heartX, heartY, this.heartSize, filled);
         }

@@ -10,6 +10,19 @@ class Game {
         this.isGameOver = false;
         this.gameOverCallback = null;
         this.backgroundImage = null; // Cached background
+        
+        // Camera/scrolling settings
+        this.camera = {
+            x: 0,
+            y: 0,
+            enabled: false,
+            scrollThresholdRight: 0.8, // Scroll when player is in right 20% (0.8 = 80% from left)
+            scrollThresholdLeft: 0.2,  // Scroll when player is in left 20%
+            scrollSpeed: 0.1,           // Smoothing factor (0-1, higher = faster)
+            minX: 0,                    // Minimum camera x (left bound)
+            maxX: null,                 // Maximum camera x (right bound, null = unlimited)
+            followY: false              // Whether to follow player vertically
+        };
     }
 
     // ==================== INITIALIZATION ====================
@@ -22,6 +35,11 @@ class Game {
         this.platforms = new Group();
         this.platforms.color = 'green';
         this.platforms.collider = 'static';
+        
+        // Initialize camera position
+        camera.x = width / 2;
+        camera.y = height / 2;
+        
         return this;
     }
 
@@ -127,39 +145,50 @@ class Game {
     // ==================== UI & DISPLAY ====================
 
     /**
-     * Display instruction text at top of screen
+     * Display instruction text at top of screen (fixed to screen)
      * @param {string[]} instructions - Array of instruction lines
      */
     showInstructions(instructions = []) {
+        push();
         fill(0);
         textSize(16);
         textAlign(CENTER);
+        
+        // Draw in world coordinates (camera position + screen position)
+        const screenCenterX = camera.x;
+        const screenTopY = camera.y - height / 2;
+        
         instructions.forEach((text, index) => {
-            window.text(text, width / 2, 30 + (index * 20));
+            window.text(text, screenCenterX, screenTopY + 30 + (index * 20));
         });
+        pop();
     }
 
     /**
-     * Draw game over overlay with restart option
+     * Draw game over overlay with restart option (fixed to screen)
      */
     drawGameOver() {
         if (!this.isGameOver) return;
 
         push();
+        // Calculate screen bounds in world coordinates
+        const screenLeft = camera.x - width / 2;
+        const screenTop = camera.y - height / 2;
+        
         // Overlay
         fill(0, 0, 0, 180);
-        rect(0, 0, width, height);
+        rect(screenLeft, screenTop, width, height);
 
         // Game Over text
         fill(255, 0, 0);
         textAlign(CENTER, CENTER);
         textSize(64);
-        text('GAME OVER', width / 2, height / 2 - 50);
+        text('GAME OVER', camera.x, camera.y - 50);
 
         // Restart instruction
         fill(255);
         textSize(24);
-        text('Press R to Restart', width / 2, height / 2 + 20);
+        text('Press R to Restart', camera.x, camera.y + 20);
         pop();
 
         if (kb.presses('r')) {
@@ -168,6 +197,83 @@ class Game {
     }
 
     // ==================== GAME STATE ====================
+
+    /**
+     * Enable camera scrolling
+     * @param {Object} options - Camera options
+     */
+    enableCamera(options = {}) {
+        this.camera.enabled = true;
+        if (options.scrollThresholdRight !== undefined) this.camera.scrollThresholdRight = options.scrollThresholdRight;
+        if (options.scrollThresholdLeft !== undefined) this.camera.scrollThresholdLeft = options.scrollThresholdLeft;
+        if (options.scrollSpeed !== undefined) this.camera.scrollSpeed = options.scrollSpeed;
+        if (options.minX !== undefined) this.camera.minX = options.minX;
+        if (options.maxX !== undefined) this.camera.maxX = options.maxX;
+        if (options.followY !== undefined) this.camera.followY = options.followY;
+    }
+
+    /**
+     * Disable camera scrolling
+     */
+    disableCamera() {
+        this.camera.enabled = false;
+        this.camera.x = 0;
+        this.camera.y = 0;
+    }
+
+    /**
+     * Update camera position based on player position
+     */
+    updateCamera() {
+        if (!this.camera.enabled || !this.player) return;
+
+        const playerScreenX = this.player.sprite.x - this.camera.x;
+        const playerScreenY = this.player.sprite.y - this.camera.y;
+
+        // Horizontal scrolling
+        const rightThreshold = width * this.camera.scrollThresholdRight;
+        const leftThreshold = width * this.camera.scrollThresholdLeft;
+
+        // Scroll right when player is in right threshold
+        if (playerScreenX > rightThreshold) {
+            const targetX = this.player.sprite.x - rightThreshold;
+            this.camera.x += (targetX - this.camera.x) * this.camera.scrollSpeed;
+        }
+        // Scroll left when player is in left threshold
+        else if (playerScreenX < leftThreshold) {
+            const targetX = this.player.sprite.x - leftThreshold;
+            this.camera.x += (targetX - this.camera.x) * this.camera.scrollSpeed;
+        }
+
+        // Apply camera bounds
+        if (this.camera.minX !== null) {
+            this.camera.x = Math.max(this.camera.minX, this.camera.x);
+        }
+        if (this.camera.maxX !== null) {
+            this.camera.x = Math.min(this.camera.maxX, this.camera.x);
+        }
+
+        // Vertical scrolling (optional)
+        if (this.camera.followY) {
+            const centerY = height / 2;
+            const targetY = this.player.sprite.y - centerY;
+            this.camera.y += (targetY - this.camera.y) * this.camera.scrollSpeed;
+        }
+
+        // Apply camera transformation using p5play camera
+        camera.x = this.camera.x + width / 2;
+        camera.y = this.camera.y + height / 2;
+    }
+
+    /**
+     * Reset camera to origin
+     */
+    resetCamera() {
+        this.camera.x = 0;
+        this.camera.y = 0;
+        camera.x = width / 2;
+        camera.y = height / 2;
+    }
 
     /**
      * Check if player fell off screen and reset
@@ -198,6 +304,7 @@ class Game {
     restartLevel() {
         this.isGameOver = false;
         this.cleanup();
+        this.resetCamera();
 
         if (this.healthBar) {
             this.healthBar.reset();
@@ -222,6 +329,7 @@ class Game {
         this.player = null;
         this.platforms = null;
         this.ground = null;
+        this.resetCamera();
         // Keep cached background for performance
     }
 

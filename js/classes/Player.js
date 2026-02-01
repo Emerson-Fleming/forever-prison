@@ -306,8 +306,14 @@ class Player {
     _startTongueExtend() {
         this.tongueState = 'extending';
         this.tongueLength = 0;
-        this.tongueTargetX = mouseX;
-        this.tongueTargetY = mouseY;
+        
+        // Convert mouse position from screen to world coordinates
+        // mouseX/mouseY are screen coords, need to add camera offset
+        const worldMouseX = mouseX + (camera.x - width / 2);
+        const worldMouseY = mouseY + (camera.y - height / 2);
+        
+        this.tongueTargetX = worldMouseX;
+        this.tongueTargetY = worldMouseY;
 
         const { dirX, dirY } = GameUtils.normalizeVector(
             this.tongueTargetX - this.sprite.x,
@@ -449,7 +455,7 @@ class Player {
     }
 
     /**
-     * Draw the tongue
+     * Draw the tongue (compensate for camera offset)
      */
     drawTongue() {
         if (this.tongueState === 'idle') return;
@@ -457,11 +463,24 @@ class Player {
         push();
         stroke(this.tongueColor);
         strokeWeight(this.tongueThickness);
-        line(this.sprite.x, this.sprite.y, this.tongueEndX, this.tongueEndY);
+        
+        // p5.js drawing functions don't automatically transform with camera in p5play
+        // We need to convert world coordinates to screen coordinates
+        // Screen coordinates = world coordinates - (camera position - center)
+        const camOffsetX = camera.x - width / 2;
+        const camOffsetY = camera.y - height / 2;
+        
+        const screenPlayerX = this.sprite.x - camOffsetX;
+        const screenPlayerY = this.sprite.y - camOffsetY;
+        const screenEndX = this.tongueEndX - camOffsetX;
+        const screenEndY = this.tongueEndY - camOffsetY;
+        
+        // Draw from player position to tongue end (in screen coordinates)
+        line(screenPlayerX, screenPlayerY, screenEndX, screenEndY);
 
         fill(this.tongueColor);
         noStroke();
-        ellipse(this.tongueEndX, this.tongueEndY, this.tongueThickness + 4);
+        ellipse(screenEndX, screenEndY, this.tongueThickness + 4);
         pop();
     }
 

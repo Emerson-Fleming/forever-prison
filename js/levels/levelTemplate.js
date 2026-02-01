@@ -88,6 +88,16 @@ function setup() {
     game.init();
     game.initializeGravity(20);
 
+    // Optional: Enable camera scrolling
+    // Uncomment to enable:
+    // game.enableCamera({
+    //     scrollThresholdRight: 0.8,  // Scroll when player is in right 20%
+    //     scrollThresholdLeft: 0.2,   // Scroll when player is in left 20%
+    //     scrollSpeed: 0.15,           // Smooth following (0-1)
+    //     minX: 0,                     // Left boundary
+    //     maxX: null                   // Right boundary (null = unlimited)
+    // });
+
     createLevelGeometry();
     createLevelEntities();
     setupRestartCallback();
@@ -98,6 +108,9 @@ function draw() {
     game.createPaperBackground();
 
     if (!game.isGameOver) {
+        // Update camera (if enabled)
+        game.updateCamera();
+
         game.showInstructions(LevelConfig.instructions);
 
         // Update player

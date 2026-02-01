@@ -2,113 +2,128 @@
 // A platform that teleports between two positions when shift is pressed
 
 class TeleportingPlatform {
+    /**
+     * Create a teleporting platform
+     * @param {Object} pointA - First position {x, y}
+     * @param {Object} pointB - Second position {x, y}
+     * @param {Object} dimA - First dimensions {width, height}
+     * @param {Object} dimB - Second dimensions {width, height}
+     * @param {string} colorA - First state color
+     * @param {string} colorB - Second state color
+     * @param {Group} platformGroup - p5play platform group
+     */
     constructor(pointA, pointB, dimA, dimB, colorA, colorB, platformGroup) {
-        // Store positions
-        this.pointA = pointA; // { x, y }
-        this.pointB = pointB; // { x, y }
-
-        // Store dimensions
-        this.dimA = dimA; // { width, height }
-        this.dimB = dimB; // { width, height }
-
-        // Store colors
-        this.colorA = colorA;
-        this.colorB = colorB;
-
-        // Track current state (true = at point A, false = at point B)
+        // Store state configurations
+        this.stateA = { pos: pointA, dim: dimA, color: colorA };
+        this.stateB = { pos: pointB, dim: dimB, color: colorB };
         this.atPointA = true;
 
         // Outline settings
         this.outlineStrokeWeight = 2;
-        this.outlineDashPattern = [10, 10]; // [dash length, gap length]
+        this.outlineDashPattern = [10, 10];
 
-        // Create the sprite
+        this._createSprite(platformGroup);
+    }
+
+    /**
+     * Create the platform sprite
+     * @private
+     */
+    _createSprite(platformGroup) {
         this.sprite = new platformGroup.Sprite();
-        this.sprite.x = this.pointA.x;
-        this.sprite.y = this.pointA.y;
-        this.sprite.width = this.dimA.width;
-        this.sprite.height = this.dimA.height;
-        this.sprite.color = this.colorA;
+        this._applyState(this.stateA);
         this.sprite.collider = 'kinematic';
     }
 
-    // Set platform dimensions
+    /**
+     * Apply a state configuration to the sprite
+     * @private
+     */
+    _applyState(state) {
+        this.sprite.x = state.pos.x;
+        this.sprite.y = state.pos.y;
+        this.sprite.width = state.dim.width;
+        this.sprite.height = state.dim.height;
+        this.sprite.color = state.color;
+    }
+
+    /**
+     * Get the current state configuration
+     * @private
+     */
+    _getCurrentState() {
+        return this.atPointA ? this.stateA : this.stateB;
+    }
+
+    /**
+     * Get the alternate state configuration
+     * @private
+     */
+    _getAlternateState() {
+        return this.atPointA ? this.stateB : this.stateA;
+    }
+
+    /**
+     * Set platform dimensions (affects current state)
+     * @param {number} w - New width
+     * @param {number} h - New height
+     */
     setSize(w, h) {
         this.sprite.width = w;
         this.sprite.height = h;
     }
 
-    // Draw a dotted rectangle outline at the alternate position
+    /**
+     * Draw a dotted rectangle outline at the alternate position
+     */
     drawAlternateOutline() {
-        // Get the alternate position and dimensions
-        let altPos, altDim, altColor;
-        if (this.atPointA) {
-            altPos = this.pointB;
-            altDim = this.dimB;
-            altColor = this.colorB;
-        } else {
-            altPos = this.pointA;
-            altDim = this.dimA;
-            altColor = this.colorA;
-        }
+        const alt = this._getAlternateState();
 
-        // Save current drawing state
         push();
-
-        // Set up the dotted line style
-        stroke(altColor);
+        stroke(alt.color);
         strokeWeight(this.outlineStrokeWeight);
         noFill();
-
-        // Set the dash pattern using drawingContext
         drawingContext.setLineDash(this.outlineDashPattern);
-
-        // Draw rectangle (centered like p5play sprites)
         rectMode(CENTER);
-        rect(altPos.x, altPos.y, altDim.width, altDim.height);
-
-        // Reset dash pattern
+        rect(alt.pos.x, alt.pos.y, alt.dim.width, alt.dim.height);
         drawingContext.setLineDash([]);
-
-        // Restore drawing state
         pop();
     }
 
-    // Toggle between point A and point B
+    /**
+     * Toggle between point A and point B
+     */
     teleport() {
-        if (this.atPointA) {
-            // Teleport to point B
-            this.sprite.x = this.pointB.x;
-            this.sprite.y = this.pointB.y;
-            this.sprite.width = this.dimB.width;
-            this.sprite.height = this.dimB.height;
-            this.sprite.color = this.colorB;
-            this.atPointA = false;
-        } else {
-            // Teleport to point A
-            this.sprite.x = this.pointA.x;
-            this.sprite.y = this.pointA.y;
-            this.sprite.width = this.dimA.width;
-            this.sprite.height = this.dimA.height;
-            this.sprite.color = this.colorA;
-            this.atPointA = true;
-        }
+        this.atPointA = !this.atPointA;
+        this._applyState(this._getCurrentState());
     }
 
-    // Check if shift is pressed and teleport
+    /**
+     * Update - check for teleport input and draw outline
+     */
     update() {
         if (kb.presses('shift')) {
             this.teleport();
         }
-
-        // Draw the alternate position outline
         this.drawAlternateOutline();
     }
 
-    // Clean up and remove the platform sprite
+    /**
+     * Clean up and remove the platform
+     */
     remove() {
         if (this.sprite) {
             this.sprite.remove();
         }
     }
+
+    // ==================== LEGACY PROPERTY ACCESS ====================
+    // For backward compatibility with existing code
+
+    get pointA() { return this.stateA.pos; }
+    get pointB() { return this.stateB.pos; }
+    get dimA() { return this.stateA.dim; }
+    get dimB() { return this.stateB.dim; }
+    get colorA() { return this.stateA.color; }
+    get colorB() { return this.stateB.color; }
 }

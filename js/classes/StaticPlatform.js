@@ -2,51 +2,85 @@
 // A static platform that stays in one position
 
 class StaticPlatform {
+    /**
+     * Create a static platform
+     * @param {number} x - Center x position
+     * @param {number} y - Center y position
+     * @param {number} width - Platform width
+     * @param {number} height - Platform height
+     * @param {string} color - Platform color
+     * @param {Group} platformGroup - p5play platform group
+     * @param {boolean} useTexture - Whether to use wall texture
+     */
     constructor(x, y, width, height, color, platformGroup, useTexture = false) {
-        // Store position
         this.position = { x, y };
-
-        // Store dimensions
         this.dimensions = { width, height };
-
-        // Store color
         this.color = color;
         this.useTexture = useTexture;
         this.textureCache = null;
 
-        // Create the sprite
-        this.sprite = new platformGroup.Sprite();
-        this.sprite.x = x;
-        this.sprite.y = y;
-        this.sprite.width = width;
-        this.sprite.height = height;
-        this.sprite.collider = 'static';
+        this._createSprite(platformGroup);
+        this._applyAppearance();
+    }
 
-        // Apply texture or solid color
-        if (useTexture && color === 'gray' || color === 'grey' || color === 'darkgray') {
-            // Generate and cache wall texture
-            this.textureCache = game.createWallTexture(width, height);
+    /**
+     * Create the platform sprite
+     * @private
+     */
+    _createSprite(platformGroup) {
+        this.sprite = new platformGroup.Sprite();
+        this.sprite.x = this.position.x;
+        this.sprite.y = this.position.y;
+        this.sprite.width = this.dimensions.width;
+        this.sprite.height = this.dimensions.height;
+        this.sprite.collider = 'static';
+    }
+
+    /**
+     * Apply texture or color to the sprite
+     * @private
+     */
+    _applyAppearance() {
+        if (this._shouldUseWallTexture()) {
+            this.textureCache = game.createWallTexture(this.dimensions.width, this.dimensions.height);
             this.sprite.img = this.textureCache;
         } else {
-            this.sprite.color = color;
+            this.sprite.color = this.color;
         }
     }
 
-    // Set platform dimensions
+    /**
+     * Check if wall texture should be used
+     * @private
+     */
+    _shouldUseWallTexture() {
+        const greyColors = ['gray', 'grey', 'darkgray'];
+        return this.useTexture && greyColors.includes(this.color);
+    }
+
+    /**
+     * Set platform dimensions
+     * @param {number} w - New width
+     * @param {number} h - New height
+     */
     setSize(w, h) {
         this.sprite.width = w;
         this.sprite.height = h;
         this.dimensions.width = w;
         this.dimensions.height = h;
 
-        // Regenerate texture if using texture
-        if (this.useTexture && (this.color === 'gray' || this.color === 'grey' || this.color === 'darkgray')) {
+        // Regenerate texture if needed
+        if (this._shouldUseWallTexture()) {
             this.textureCache = game.createWallTexture(w, h);
             this.sprite.img = this.textureCache;
         }
     }
 
-    // Set platform position
+    /**
+     * Set platform position
+     * @param {number} x - New x position
+     * @param {number} y - New y position
+     */
     setPosition(x, y) {
         this.sprite.x = x;
         this.sprite.y = y;
@@ -54,19 +88,25 @@ class StaticPlatform {
         this.position.y = y;
     }
 
-    // Set platform color
+    /**
+     * Set platform color
+     * @param {string} color - New color
+     */
     setColor(color) {
         this.sprite.color = color;
         this.color = color;
     }
 
-    // Update method (for consistency with other platform classes)
+    /**
+     * Update method (for API consistency)
+     */
     update() {
-        // Static platforms don't need to update
-        // This method exists for API consistency
+        // Static platforms don't need updates
     }
 
-    // Clean up and remove the platform sprite
+    /**
+     * Clean up and remove the platform
+     */
     remove() {
         if (this.sprite) {
             this.sprite.remove();

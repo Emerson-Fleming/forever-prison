@@ -1,90 +1,144 @@
-// Level 2 - Example of a second level with multiple teleporting platforms
+// Level 2 - Multiple Teleporting Platforms
+// A level with multiple teleporting platforms to navigate
 
-let teleportingPlatform1;
-let teleportingPlatform2;
+// ==================== LEVEL CONFIGURATION ====================
 
-function setup() {
-    // Create canvas
-    createCanvas(windowWidth, windowHeight);
-
-    // Initialize game
-    game.init();
-    game.initializeGravity(20);
-
-    // Create player
-    game.createPlayer(100, height / 2, {
+const Level2Config = {
+    player: {
+        x: 100,
+        getY: () => height / 2,
         color: 'blue',
         moveSpeed: 6,
         jumpForce: 10
-    });
+    },
 
-    // Create ground
+    staticPlatforms: [
+        { xOffset: 200, yOffset: -150, width: 150, height: 20, color: 'brown' },
+        { xOffset: -200, yOffset: -150, width: 150, height: 20, color: 'brown' }
+    ],
+
+    teleportingPlatforms: [
+        {
+            pointA: { xRatio: 1/3, yOffset: -250 },
+            pointB: { xRatio: 1/3, yOffset: -400 },
+            dim: { width: 120, height: 20 },
+            colorA: 'red',
+            colorB: 'pink'
+        },
+        {
+            pointA: { xRatio: 2/3, yOffset: -300 },
+            pointB: { xRatio: 2/3, yOffset: -450 },
+            dim: { width: 120, height: 20 },
+            colorA: 'cyan',
+            colorB: 'lightblue'
+        }
+    ],
+
+    instructions: [
+        'Level 2 - Reach the top!',
+        'Use Arrow Keys or WASD to move, Space to Jump',
+        'Press Shift to toggle ALL teleporting platforms'
+    ]
+};
+
+// ==================== LEVEL OBJECTS ====================
+
+let teleportingPlatforms = [];
+
+// ==================== LEVEL LIFECYCLE ====================
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+
+    game.init();
+    game.initializeGravity(20);
+
+    createLevelGeometry();
+    createLevelEntities();
+    setupRestartCallback();
+}
+
+function draw() {
+    // Simple background for level 2
+    background(180, 200, 220);
+
+    game.showInstructions(Level2Config.instructions);
+
+    game.player.update();
+
+    // Update all teleporting platforms
+    for (let platform of teleportingPlatforms) {
+        platform.update();
+    }
+
+    game.checkPlayerFell(Level2Config.player.x, Level2Config.player.getY());
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+
+// ==================== LEVEL CREATION HELPERS ====================
+
+/**
+ * Create all platforms
+ */
+function createLevelGeometry() {
+    // Ground
     game.createGround('darkgreen');
 
-    // Create some static platforms
-    game.createPlatform(200, height - 150, 150, 20, 'brown');
-    game.createPlatform(width - 200, height - 150, 150, 20, 'brown');
+    // Static platforms
+    for (let cfg of Level2Config.staticPlatforms) {
+        const x = cfg.xOffset > 0 ? cfg.xOffset : width + cfg.xOffset;
+        game.createPlatform(x, height + cfg.yOffset, cfg.width, cfg.height, cfg.color);
+    }
 
-    // Create first teleporting platform
-    teleportingPlatform1 = new TeleportingPlatform(
-        { x: width / 3, y: height - 250 },
-        { x: width / 3, y: height - 400 },
-        { width: 120, height: 20 },
-        { width: 120, height: 20 },
-        'red',
-        'pink',
-        game.platforms
-    );
+    // Teleporting platforms
+    teleportingPlatforms = [];
+    for (let cfg of Level2Config.teleportingPlatforms) {
+        const platform = new TeleportingPlatform(
+            { x: width * cfg.pointA.xRatio, y: height + cfg.pointA.yOffset },
+            { x: width * cfg.pointB.xRatio, y: height + cfg.pointB.yOffset },
+            cfg.dim,
+            cfg.dim,
+            cfg.colorA,
+            cfg.colorB,
+            game.platforms
+        );
+        teleportingPlatforms.push(platform);
+    }
+}
 
-    // Create second teleporting platform
-    teleportingPlatform2 = new TeleportingPlatform(
-        { x: (2 * width) / 3, y: height - 300 },
-        { x: (2 * width) / 3, y: height - 450 },
-        { width: 120, height: 20 },
-        { width: 120, height: 20 },
-        'cyan',
-        'lightblue',
-        game.platforms
-    );
+/**
+ * Create player
+ */
+function createLevelEntities() {
+    const cfg = Level2Config.player;
+    game.createPlayer(cfg.x, cfg.getY(), {
+        color: cfg.color,
+        moveSpeed: cfg.moveSpeed,
+        jumpForce: cfg.jumpForce
+    });
+}
 
-    // Set up restart callback
+/**
+ * Set up the restart callback
+ */
+function setupRestartCallback() {
     game.setRestartCallback(() => {
-        // Clean up level-specific objects
-        if (teleportingPlatform1) {
-            teleportingPlatform1.remove();
-        }
-        if (teleportingPlatform2) {
-            teleportingPlatform2.remove();
-        }
-
-        // Restart the level
+        cleanupLevelObjects();
         setup();
     });
 }
 
-function draw() {
-    // Background - different color for level 2
-    background(180, 200, 220);
-
-    // Display instructions
-    game.showInstructions([
-        'Level 2 - Reach the top!',
-        'Use Arrow Keys or WASD to move, Space to Jump',
-        'Press Shift to toggle ALL teleporting platforms'
-    ]);
-
-    // Update player
-    game.player.update();
-
-    // Update teleporting platforms
-    teleportingPlatform1.update();
-    teleportingPlatform2.update();
-
-    // Check if player fell
-    game.checkPlayerFell(100, height / 2);
-}
-
-// Handle window resize
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+/**
+ * Clean up all level-specific objects
+ */
+function cleanupLevelObjects() {
+    for (let platform of teleportingPlatforms) {
+        if (platform && platform.remove) {
+            platform.remove();
+        }
+    }
+    teleportingPlatforms = [];
 }

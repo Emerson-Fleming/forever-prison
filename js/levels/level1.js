@@ -1,158 +1,203 @@
 // Level 1 - Jail Cell Escape
+// A beginner level teaching basic mechanics
+
+// ==================== LEVEL CONFIGURATION ====================
+
+const Level1Config = {
+    // Jail cell dimensions
+    jail: {
+        x: 100,
+        wallThickness: 20,
+        width: 200,
+        height: 200,
+        getY: () => height - 250
+    },
+
+    // Player settings
+    player: {
+        color: 'green',
+        moveSpeed: 5,
+        jumpForce: 8,
+        getSpawnX: function() { return Level1Config.jail.x + Level1Config.jail.width / 2; },
+        getSpawnY: function() { return Level1Config.jail.getY() + Level1Config.jail.height / 2; }
+    },
+
+    // Enemy settings
+    enemy: {
+        width: 40,
+        height: 40,
+        color: 'red',
+        shootInterval: 1500,
+        bulletSpeed: 6,
+        bulletColor: 'darkred',
+        bulletSize: 10,
+        hasShield: true,
+        shieldHealth: 3,
+        shieldColor: 'cyan',
+        shieldRadius: 35,
+        getX: function() { return Level1Config.jail.x + Level1Config.jail.width + 150; },
+        getY: function() { return Level1Config.jail.getY() + Level1Config.jail.height / 2; }
+    },
+
+    // Instructions
+    instructions: [
+        'Level 1 - Jail Cell Escape!',
+        'Use Arrow Keys or WASD to move, Space to Jump',
+        'Press Shift to teleport the RED WALL and escape',
+        'Click to shoot tongue - Break the enemy\'s shield first!'
+    ]
+};
+
+// ==================== LEVEL OBJECTS ====================
 
 let jailBackWall;
 let jailCeiling;
 let jailRightWall;
 let waitingEnemy;
 
+// ==================== LEVEL LIFECYCLE ====================
+
 function setup() {
-    // Create canvas
     createCanvas(windowWidth, windowHeight);
 
-    // Initialize game
     game.init();
     game.initializeGravity(20);
 
-    // Jail cell dimensions
-    const jailX = 100;
-    const jailY = height - 250;
-    const jailWidth = 200;
-    const jailHeight = 200;
-    const wallThickness = 20;
-
-    // Create player inside jail cell
-    game.createPlayer(jailX + jailWidth / 2, jailY + jailHeight / 2, {
-        color: 'green',
-        moveSpeed: 5,
-        jumpForce: 8
-    });
-
-    // Create health bar
-    game.createHealthBar(5, {
-        x: 30,
-        y: 30,
-        heartSize: 30
-    });
-
-    // Create ground
-    game.createGround('brown');
-
-    // Create jail cell back wall (left side) with texture
-    jailBackWall = new StaticPlatform(
-        jailX - wallThickness / 2,           // x position
-        jailY + jailHeight / 2,              // y position
-        wallThickness,                        // width
-        jailHeight,                           // height
-        'gray',                               // color
-        game.platforms,                       // platform group
-        true                                  // use texture
-    );
-
-    // Create jail cell ceiling with texture
-    jailCeiling = new StaticPlatform(
-        jailX + jailWidth / 2,               // x position
-        jailY - wallThickness / 2,           // y position
-        jailWidth + wallThickness * 2,       // width (extends over walls)
-        wallThickness,                        // height
-        'darkgray',                           // color
-        game.platforms,                       // platform group
-        true                                  // use texture
-    );
-
-    // Create jail cell right wall (teleporting platform)
-    jailRightWall = new TeleportingPlatform(
-        { x: jailX + jailWidth + wallThickness / 2, y: jailY + jailHeight / 2 },  // Point A (blocks cell)
-        { x: jailX + jailWidth + wallThickness / 2, y: jailY - 200 },             // Point B (teleports up out of way)
-        { width: wallThickness, height: jailHeight },                              // Point A dimensions
-        { width: wallThickness, height: wallThickness },                           // Point B dimensions (small when teleported)
-        'red',                                                                     // Point A color
-        'pink',                                                                    // Point B color
-        game.platforms                                                             // Platform group
-    );
-
-    // Create enemy waiting outside the jail cell with shield
-    waitingEnemy = new Enemy(
-        jailX + jailWidth + 150,             // x position (to the right of jail)
-        jailY + jailHeight / 2,              // y position (same level as player)
-        {
-            width: 40,
-            height: 40,
-            color: 'red',
-            shootInterval: 1500,              // shoots every 1.5 seconds
-            bulletSpeed: 6,
-            bulletColor: 'darkred',
-            bulletSize: 10,
-            hasShield: true,                  // Enable shield
-            shieldHealth: 3,                  // Takes 3 tongue hits to break
-            shieldColor: 'cyan',              // Shield color
-            shieldRadius: 35                  // Shield size
-        }
-    );
-
-    // Register the enemy with the player
-    game.player.addEnemy(waitingEnemy);
-
-    // Set up restart callback
-    game.setRestartCallback(() => {
-        // Clean up level-specific objects
-        if (jailBackWall) {
-            jailBackWall.remove();
-        }
-        if (jailCeiling) {
-            jailCeiling.remove();
-        }
-        if (jailRightWall) {
-            jailRightWall.remove();
-        }
-        if (waitingEnemy) {
-            waitingEnemy.remove();
-        }
-
-        // Restart the level
-        setup();
-    });
+    createLevelGeometry();
+    createLevelEntities();
+    setupRestartCallback();
 }
 
 function draw() {
-    // Textured paper background with red, black, brown blend
     game.createPaperBackground();
 
-    // Check for game over
     if (!game.isGameOver) {
-        // Display instructions
-        game.showInstructions([
-            'Level 1 - Jail Cell Escape!',
-            'Use Arrow Keys or WASD to move, Space to Jump',
-            'Press Shift to teleport the RED WALL and escape',
-            'Click to shoot tongue - Break the enemy\'s shield first!'
-        ]);
+        game.showInstructions(Level1Config.instructions);
 
-        // Update player
         game.player.update();
-
-        // Update jail right wall (teleporting platform)
         jailRightWall.update();
-
-        // Update enemy (pass platforms for bullet collision detection)
         waitingEnemy.update(game.player, game.platforms);
 
-        // Check if player fell
-        game.checkPlayerFell(100 + 200 / 2, height - 250 + 200 / 2);
-
-        // Check for game over
+        game.checkPlayerFell(
+            Level1Config.player.getSpawnX(),
+            Level1Config.player.getSpawnY()
+        );
         game.checkGameOver();
     }
 
-    // Draw health bar (always visible)
     if (game.healthBar) {
         game.healthBar.update();
     }
 
-    // Draw game over screen if dead
     game.drawGameOver();
 }
 
-// Handle window resize
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+}
+
+// ==================== LEVEL CREATION HELPERS ====================
+
+/**
+ * Create all static and teleporting platforms
+ */
+function createLevelGeometry() {
+    const cfg = Level1Config.jail;
+    const jailY = cfg.getY();
+
+    // Ground
+    game.createGround('brown');
+
+    // Back wall (left side)
+    jailBackWall = new StaticPlatform(
+        cfg.x - cfg.wallThickness / 2,
+        jailY + cfg.height / 2,
+        cfg.wallThickness,
+        cfg.height,
+        'gray',
+        game.platforms,
+        true
+    );
+
+    // Ceiling
+    jailCeiling = new StaticPlatform(
+        cfg.x + cfg.width / 2,
+        jailY - cfg.wallThickness / 2,
+        cfg.width + cfg.wallThickness * 2,
+        cfg.wallThickness,
+        'darkgray',
+        game.platforms,
+        true
+    );
+
+    // Right wall (teleporting)
+    jailRightWall = new TeleportingPlatform(
+        { x: cfg.x + cfg.width + cfg.wallThickness / 2, y: jailY + cfg.height / 2 },
+        { x: cfg.x + cfg.width + cfg.wallThickness / 2, y: jailY - 200 },
+        { width: cfg.wallThickness, height: cfg.height },
+        { width: cfg.wallThickness, height: cfg.wallThickness },
+        'red',
+        'pink',
+        game.platforms
+    );
+}
+
+/**
+ * Create player and enemies
+ */
+function createLevelEntities() {
+    const playerCfg = Level1Config.player;
+    const enemyCfg = Level1Config.enemy;
+
+    // Player
+    game.createPlayer(playerCfg.getSpawnX(), playerCfg.getSpawnY(), {
+        color: playerCfg.color,
+        moveSpeed: playerCfg.moveSpeed,
+        jumpForce: playerCfg.jumpForce
+    });
+
+    // Health bar
+    game.createHealthBar(5, { x: 30, y: 30, heartSize: 30 });
+
+    // Enemy
+    waitingEnemy = new Enemy(enemyCfg.getX(), enemyCfg.getY(), {
+        width: enemyCfg.width,
+        height: enemyCfg.height,
+        color: enemyCfg.color,
+        shootInterval: enemyCfg.shootInterval,
+        bulletSpeed: enemyCfg.bulletSpeed,
+        bulletColor: enemyCfg.bulletColor,
+        bulletSize: enemyCfg.bulletSize,
+        hasShield: enemyCfg.hasShield,
+        shieldHealth: enemyCfg.shieldHealth,
+        shieldColor: enemyCfg.shieldColor,
+        shieldRadius: enemyCfg.shieldRadius
+    });
+
+    game.player.addEnemy(waitingEnemy);
+}
+
+/**
+ * Set up the restart callback to clean up level objects
+ */
+function setupRestartCallback() {
+    game.setRestartCallback(() => {
+        // Clean up level-specific objects
+        cleanupLevelObjects();
+        // Restart
+        setup();
+    });
+}
+
+/**
+ * Clean up all level-specific objects
+ */
+function cleanupLevelObjects() {
+    const levelObjects = [jailBackWall, jailCeiling, jailRightWall, waitingEnemy];
+    
+    for (let obj of levelObjects) {
+        if (obj && obj.remove) {
+            obj.remove();
+        }
+    }
 }

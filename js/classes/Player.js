@@ -3,23 +3,48 @@
 
 class Player {
     constructor(x, y, options = {}) {
-        // Create the sprite
+        this._initSprite(x, y, options);
+        this._initMovement(options);
+        this._initTongue(options);
+        this._initWallJump(options);
+        this._initHealth(options);
+    }
+
+    // ==================== INITIALIZATION ====================
+
+    /**
+     * Initialize player sprite
+     * @private
+     */
+    _initSprite(x, y, options) {
         this.sprite = new Sprite();
         this.sprite.x = x;
         this.sprite.y = y;
         this.sprite.width = options.width || 50;
         this.sprite.height = options.height || 50;
         this.sprite.color = options.color || 'green';
-        this.sprite.rotationLock = true; // Prevent rotation
+        this.sprite.rotationLock = true;
+        this.originalColor = options.color || 'green';
+    }
 
-        // Movement settings
+    /**
+     * Initialize movement settings
+     * @private
+     */
+    _initMovement(options) {
         this.moveSpeed = options.moveSpeed || 5;
         this.jumpForce = options.jumpForce || 8;
-
-        // Coyote time settings (allows jumping shortly after leaving platform)
-        this.coyoteTime = options.coyoteTime || 150; // milliseconds
+        this.coyoteTime = options.coyoteTime || 150;
         this.lastGroundedTime = 0;
+        this.platforms = null;
+        this.enemies = [];
+    }
 
+    /**
+     * Initialize tongue/grapple settings
+     * @private
+     */
+    _initTongue(options) {
         // Tongue settings
         this.tongueMaxLength = options.tongueMaxLength || 300;
         this.tongueSpeed = options.tongueSpeed || 15;
@@ -31,397 +56,493 @@ class Player {
         // Tongue state
         this.tongueState = 'idle'; // 'idle', 'extending', 'attached', 'attached_platform', 'retracting'
         this.tongueLength = 0;
-        this.tongueTarget = null; // The object the tongue grabbed
-        this.tongueAttachedPlatform = null; // Platform the tongue is attached to
-        this.tongueAttachPoint = { x: 0, y: 0 }; // Point where tongue attached to platform
+        this.tongueTarget = null;
+        this.tongueAttachedPlatform = null;
+        this.tongueAttachPoint = { x: 0, y: 0 };
         this.tongueEndX = 0;
         this.tongueEndY = 0;
 
-        // Tongue direction (normalized vector toward target)
+        // Tongue direction
         this.tongueDirX = 1;
         this.tongueDirY = 0;
-        this.tongueTargetX = 0; // The clicked target position
+        this.tongueTargetX = 0;
         this.tongueTargetY = 0;
 
-        // Grapple settings (for pulling player to platforms)
+        // Grapple pull speed
         this.grapplePullSpeed = options.grapplePullSpeed || 10;
+    }
 
-        // Reference to pullable objects
-        this.enemies = [];
-
-        // Reference to platforms for collision detection
-        this.platforms = null;
-
-        // Health system
-        this.healthBar = null; // Will be set externally
-        this.isInvulnerable = false; // Temporary invulnerability after being hit
-        this.invulnerabilityDuration = 1000; // ms
-
-        // Hit/damage effect settings
-        this.isHit = false;
-        this.hitFlashDuration = 300; // ms
-        this.hitFlashTime = 0;
-        this.originalColor = options.color || 'green';
-
-        // Wall jump settings
-        this.wallJumpForceX = options.wallJumpForceX || 6; // Horizontal push away from wall
-        this.wallJumpForceY = options.wallJumpForceY || 8; // Vertical jump force
-        this.wallSlideSpeed = options.wallSlideSpeed || 2; // Slower fall when on wall
-        this.wallJumpCoyoteTime = options.wallJumpCoyoteTime || 100; // ms to wall jump after leaving wall
+    /**
+     * Initialize wall jump settings
+     * @private
+     */
+    _initWallJump(options) {
+        this.wallJumpForceX = options.wallJumpForceX || 6;
+        this.wallJumpForceY = options.wallJumpForceY || 8;
+        this.wallSlideSpeed = options.wallSlideSpeed || 2;
+        this.wallJumpCoyoteTime = options.wallJumpCoyoteTime || 100;
         this.lastWallTime = 0;
         this.lastWallDirection = 0; // -1 = wall on left, 1 = wall on right
         this.isOnWall = false;
     }
 
-    // Set the platforms group for collision detection
+    /**
+     * Initialize health/damage settings
+     * @private
+     */
+    _initHealth(options) {
+        this.healthBar = null;
+        this.isInvulnerable = false;
+        this.invulnerabilityDuration = 1000;
+        this.isHit = false;
+        this.hitFlashDuration = 300;
+        this.hitFlashTime = 0;
+    }
+
+    // ==================== SETUP ====================
+
+    /**
+     * Set the platforms group for collision detection
+     * @param {Group} platformGroup
+     */
     setPlatforms(platformGroup) {
         this.platforms = platformGroup;
     }
 
-    // Register pullable objects for tongue interaction
+    /**
+     * Register an enemy for tongue interaction
+     * @param {Enemy} obj
+     */
     addEnemy(obj) {
         this.enemies.push(obj);
     }
 
-    // Called when player is hit by a bullet
+    /**
+     * Set the health bar reference
+     * @param {HealthBar} healthBar
+     */
+    setHealthBar(healthBar) {
+        this.healthBar = healthBar;
+    }
+
+    // ==================== DAMAGE & HEALTH ====================
+
+    /**
+     * Called when player is hit by a bullet
+     */
     onHit() {
-        // Don't take damage if invulnerable
         if (this.isInvulnerable) return;
 
         this.isHit = true;
         this.hitFlashTime = millis();
         this.isInvulnerable = true;
 
-        // Reduce health
         if (this.healthBar) {
             this.healthBar.damage(1);
         }
     }
 
-    // Set the health bar reference
-    setHealthBar(healthBar) {
-        this.healthBar = healthBar;
-    }
-
-    // Draw hit flash effect
+    /**
+     * Draw hit flash effect and manage invulnerability
+     */
     drawHitEffect() {
-        // Check invulnerability timer
-        if (this.isInvulnerable) {
-            let elapsed = millis() - this.hitFlashTime;
+        this._updateInvulnerability();
+        this._updateHitFlash();
+    }
 
-            if (elapsed >= this.invulnerabilityDuration) {
-                this.isInvulnerable = false;
-                this.isHit = false;
-                this.sprite.color = this.originalColor;
-            }
-        }
+    /**
+     * Update invulnerability timer
+     * @private
+     */
+    _updateInvulnerability() {
+        if (!this.isInvulnerable) return;
 
-        if (this.isHit) {
-            let elapsed = millis() - this.hitFlashTime;
-
-            if (elapsed < this.hitFlashDuration) {
-                // Flash between white and original color
-                let flashSpeed = 0.1;
-                let flash = sin(elapsed * flashSpeed);
-
-                if (flash > 0) {
-                    this.sprite.color = 'white';
-                } else {
-                    this.sprite.color = this.originalColor;
-                }
-            } else {
-                // Flash done but still invulnerable - show slightly transparent
-                if (this.isInvulnerable) {
-                    this.sprite.color = this.originalColor;
-                    // Could add transparency here if needed
-                } else {
-                    this.isHit = false;
-                    this.sprite.color = this.originalColor;
-                }
-            }
+        const elapsed = millis() - this.hitFlashTime;
+        if (elapsed >= this.invulnerabilityDuration) {
+            this.isInvulnerable = false;
+            this.isHit = false;
+            this.sprite.color = this.originalColor;
         }
     }
 
-    // Check if player can jump (on ground or within coyote time)
+    /**
+     * Update hit flash visual effect
+     * @private
+     */
+    _updateHitFlash() {
+        if (!this.isHit) return;
+
+        const elapsed = millis() - this.hitFlashTime;
+
+        if (elapsed < this.hitFlashDuration) {
+            // Flash between white and original color
+            const flash = sin(elapsed * 0.1);
+            this.sprite.color = flash > 0 ? 'white' : this.originalColor;
+        } else if (!this.isInvulnerable) {
+            this.isHit = false;
+            this.sprite.color = this.originalColor;
+        }
+    }
+
+    // ==================== JUMPING ====================
+
+    /**
+     * Check if player can jump (on ground or within coyote time)
+     * @returns {boolean}
+     */
     canJump() {
         // Currently on a platform
         if (this.platforms && this.sprite.colliding(this.platforms)) {
             return true;
         }
-        // Within coyote time window
-        if (millis() - this.lastGroundedTime < this.coyoteTime) {
-            return true;
-        }
-        return false;
+        // Within coyote time
+        return millis() - this.lastGroundedTime < this.coyoteTime;
     }
 
-    // Check if player is touching a wall (side collision with platform)
+    /**
+     * Check if player can wall jump
+     * @returns {boolean}
+     */
+    canWallJump() {
+        return this.isOnWall || (millis() - this.lastWallTime < this.wallJumpCoyoteTime);
+    }
+
+    /**
+     * Check if player is touching a wall
+     * @returns {boolean}
+     */
     checkWallCollision() {
         if (!this.platforms) return false;
 
         this.isOnWall = false;
 
         for (let platform of this.platforms) {
-            // Check if colliding with this platform
-            if (this.sprite.colliding(platform)) {
-                // Get the collision direction
-                let playerLeft = this.sprite.x - this.sprite.width / 2;
-                let playerRight = this.sprite.x + this.sprite.width / 2;
-                let playerTop = this.sprite.y - this.sprite.height / 2;
-                let playerBottom = this.sprite.y + this.sprite.height / 2;
+            if (!this.sprite.colliding(platform)) continue;
 
-                let platLeft = platform.x - platform.width / 2;
-                let platRight = platform.x + platform.width / 2;
-                let platTop = platform.y - platform.height / 2;
-                let platBottom = platform.y + platform.height / 2;
-
-                // Check if it's a side collision (not standing on top)
-                let isAbovePlatform = playerBottom <= platTop + 10;
-
-                if (!isAbovePlatform) {
-                    // Check left side of platform
-                    if (playerRight >= platLeft && playerRight <= platLeft + 15 &&
-                        playerBottom > platTop && playerTop < platBottom) {
-                        this.isOnWall = true;
-                        this.lastWallDirection = 1; // Wall is on player's right
-                        this.lastWallTime = millis();
-                        return true;
-                    }
-                    // Check right side of platform
-                    if (playerLeft <= platRight && playerLeft >= platRight - 15 &&
-                        playerBottom > platTop && playerTop < platBottom) {
-                        this.isOnWall = true;
-                        this.lastWallDirection = -1; // Wall is on player's left
-                        this.lastWallTime = millis();
-                        return true;
-                    }
-                }
+            const wallSide = this._getWallSide(platform);
+            if (wallSide !== 0) {
+                this.isOnWall = true;
+                this.lastWallDirection = wallSide;
+                this.lastWallTime = millis();
+                return true;
             }
         }
         return false;
     }
 
-    // Check if player can wall jump
-    canWallJump() {
-        // Currently on wall
-        if (this.isOnWall) {
-            return true;
+    /**
+     * Determine which side of a platform the player is touching
+     * @private
+     * @returns {number} -1 for left wall, 1 for right wall, 0 for not a wall
+     */
+    _getWallSide(platform) {
+        const playerBounds = GameUtils.getSpriteBounds(this.sprite);
+        const platBounds = GameUtils.getSpriteBounds(platform);
+
+        // Not standing on top
+        const isAbovePlatform = playerBounds.bottom <= platBounds.top + 10;
+        if (isAbovePlatform) return 0;
+
+        // Check left side of platform (wall on player's right)
+        if (playerBounds.right >= platBounds.left && playerBounds.right <= platBounds.left + 15 &&
+            playerBounds.bottom > platBounds.top && playerBounds.top < platBounds.bottom) {
+            return 1;
         }
-        // Within wall coyote time
-        if (millis() - this.lastWallTime < this.wallJumpCoyoteTime) {
-            return true;
+
+        // Check right side of platform (wall on player's left)
+        if (playerBounds.left <= platBounds.right && playerBounds.left >= platBounds.right - 15 &&
+            playerBounds.bottom > platBounds.top && playerBounds.top < platBounds.bottom) {
+            return -1;
         }
-        return false;
+
+        return 0;
     }
 
-    // Handle tongue mechanics
+    // ==================== TONGUE MECHANICS ====================
+
+    /**
+     * Handle tongue state machine and interactions
+     */
     handleTongue() {
-        // Start tongue extension when mouse is clicked
-        if (mouse.presses() && this.tongueState === 'idle') {
-            this.tongueState = 'extending';
-            this.tongueLength = 0;
+        this._handleTongueInput();
+        this._updateTongueEndPosition();
 
-            // Calculate direction toward mouse click
-            this.tongueTargetX = mouseX;
-            this.tongueTargetY = mouseY;
-            let dx = this.tongueTargetX - this.sprite.x;
-            let dy = this.tongueTargetY - this.sprite.y;
-            let d = dist(0, 0, dx, dy);
-
-            // Normalize direction
-            if (d > 0) {
-                this.tongueDirX = dx / d;
-                this.tongueDirY = dy / d;
-            }
-
-            this.tongueTarget = null;
-            this.tongueAttachedPlatform = null;
-        }
-
-        // Allow releasing tongue early by clicking again
-        if (mouse.presses() && (this.tongueState === 'attached' || this.tongueState === 'attached_platform')) {
-            this.tongueState = 'retracting';
-            this.tongueTarget = null;
-            this.tongueAttachedPlatform = null;
-        }
-
-        // Calculate tongue end position based on direction
-        this.tongueEndX = this.sprite.x + (this.tongueLength * this.tongueDirX);
-        this.tongueEndY = this.sprite.y + (this.tongueLength * this.tongueDirY);
-
-        // Handle tongue states
         switch (this.tongueState) {
             case 'extending':
-                this.tongueLength += this.tongueSpeed;
-
-                // Check if tongue hit a pullable object
-                for (let obj of this.enemies) {
-                    if (obj.checkTongueHit(this.tongueEndX, this.tongueEndY)) {
-                        this.tongueState = 'attached';
-                        this.tongueTarget = obj;
-                        return;
-                    }
-                }
-
-                // Check if tongue hit a platform
-                if (this.platforms) {
-                    for (let platform of this.platforms) {
-                        if (this.checkTongueHitPlatform(platform)) {
-                            this.tongueState = 'attached_platform';
-                            this.tongueAttachedPlatform = platform;
-                            // Store the attach point
-                            this.tongueAttachPoint.x = this.tongueEndX;
-                            this.tongueAttachPoint.y = this.tongueEndY;
-                            return;
-                        }
-                    }
-                }
-
-                // Retract if max length reached without hitting anything
-                if (this.tongueLength >= this.tongueMaxLength) {
-                    this.tongueState = 'retracting';
-                }
+                this._handleTongueExtending();
                 break;
-
             case 'attached':
-                // Pull the object toward the player
-                if (this.tongueTarget) {
-                    this.tongueTarget.pullToward(this.sprite.x, this.sprite.y, this.tonguePullSpeed);
-
-                    // Update tongue end to object position
-                    this.tongueEndX = this.tongueTarget.sprite.x;
-                    this.tongueEndY = this.tongueTarget.sprite.y;
-                    this.tongueLength = dist(this.sprite.x, this.sprite.y, this.tongueEndX, this.tongueEndY);
-
-                    // Release when object is close enough
-                    if (this.tongueLength < 60) {
-                        this.tongueState = 'retracting';
-                        this.tongueTarget = null;
-                    }
-                }
+                this._handleTongueAttached();
                 break;
-
             case 'attached_platform':
-                // Pull the player toward the platform
-                if (this.tongueAttachedPlatform) {
-                    // Update attach point if platform moves (for teleporting platforms)
-                    // The attach point stays relative to where we hit
-
-                    // Calculate direction from player to attach point
-                    let dx = this.tongueAttachPoint.x - this.sprite.x;
-                    let dy = this.tongueAttachPoint.y - this.sprite.y;
-                    let d = dist(0, 0, dx, dy);
-
-                    if (d > 30) {
-                        // Pull player toward the attach point
-                        let pullX = (dx / d) * this.grapplePullSpeed;
-                        let pullY = (dy / d) * this.grapplePullSpeed;
-
-                        this.sprite.velocity.x = pullX;
-                        this.sprite.velocity.y = pullY;
-                    } else {
-                        // Close enough, release
-                        this.tongueState = 'retracting';
-                        this.tongueAttachedPlatform = null;
-                    }
-
-                    // Update tongue end to attach point
-                    this.tongueEndX = this.tongueAttachPoint.x;
-                    this.tongueEndY = this.tongueAttachPoint.y;
-                    this.tongueLength = d;
-                }
+                this._handleTonguePlatformAttached();
                 break;
-
             case 'retracting':
-                this.tongueLength -= this.tongueRetractSpeed;
-                if (this.tongueLength <= 0) {
-                    this.tongueLength = 0;
-                    this.tongueState = 'idle';
-                }
+                this._handleTongueRetracting();
                 break;
         }
     }
 
-    // Check if tongue tip hit a platform
-    checkTongueHitPlatform(platform) {
-        let platLeft = platform.x - platform.width / 2;
-        let platRight = platform.x + platform.width / 2;
-        let platTop = platform.y - platform.height / 2;
-        let platBottom = platform.y + platform.height / 2;
+    /**
+     * Handle tongue mouse input
+     * @private
+     */
+    _handleTongueInput() {
+        // Start extending on click while idle
+        if (mouse.presses() && this.tongueState === 'idle') {
+            this._startTongueExtend();
+        }
 
-        return (this.tongueEndX >= platLeft && this.tongueEndX <= platRight &&
-            this.tongueEndY >= platTop && this.tongueEndY <= platBottom);
+        // Release early on click while attached
+        if (mouse.presses() && (this.tongueState === 'attached' || this.tongueState === 'attached_platform')) {
+            this._releaseTongue();
+        }
     }
 
-    // Draw the tongue
+    /**
+     * Start tongue extension toward mouse position
+     * @private
+     */
+    _startTongueExtend() {
+        this.tongueState = 'extending';
+        this.tongueLength = 0;
+        this.tongueTargetX = mouseX;
+        this.tongueTargetY = mouseY;
+
+        const { dirX, dirY } = GameUtils.normalizeVector(
+            this.tongueTargetX - this.sprite.x,
+            this.tongueTargetY - this.sprite.y
+        );
+        this.tongueDirX = dirX;
+        this.tongueDirY = dirY;
+
+        this.tongueTarget = null;
+        this.tongueAttachedPlatform = null;
+    }
+
+    /**
+     * Release the tongue from whatever it's attached to
+     * @private
+     */
+    _releaseTongue() {
+        this.tongueState = 'retracting';
+        this.tongueTarget = null;
+        this.tongueAttachedPlatform = null;
+    }
+
+    /**
+     * Update tongue end position based on direction
+     * @private
+     */
+    _updateTongueEndPosition() {
+        this.tongueEndX = this.sprite.x + (this.tongueLength * this.tongueDirX);
+        this.tongueEndY = this.sprite.y + (this.tongueLength * this.tongueDirY);
+    }
+
+    /**
+     * Handle tongue extending state
+     * @private
+     */
+    _handleTongueExtending() {
+        this.tongueLength += this.tongueSpeed;
+
+        // Check enemy hits
+        for (let obj of this.enemies) {
+            if (obj.checkTongueHit(this.tongueEndX, this.tongueEndY)) {
+                this.tongueState = 'attached';
+                this.tongueTarget = obj;
+                return;
+            }
+        }
+
+        // Check platform hits
+        if (this.platforms) {
+            for (let platform of this.platforms) {
+                if (this._checkTongueHitPlatform(platform)) {
+                    this.tongueState = 'attached_platform';
+                    this.tongueAttachedPlatform = platform;
+                    this.tongueAttachPoint.x = this.tongueEndX;
+                    this.tongueAttachPoint.y = this.tongueEndY;
+                    return;
+                }
+            }
+        }
+
+        // Max length reached
+        if (this.tongueLength >= this.tongueMaxLength) {
+            this.tongueState = 'retracting';
+        }
+    }
+
+    /**
+     * Handle tongue attached to enemy state
+     * @private
+     */
+    _handleTongueAttached() {
+        if (!this.tongueTarget) return;
+
+        // Pull enemy toward player
+        this.tongueTarget.pullToward(this.sprite.x, this.sprite.y, this.tonguePullSpeed);
+
+        // Update tongue end to enemy position
+        this.tongueEndX = this.tongueTarget.sprite.x;
+        this.tongueEndY = this.tongueTarget.sprite.y;
+        this.tongueLength = dist(this.sprite.x, this.sprite.y, this.tongueEndX, this.tongueEndY);
+
+        // Release when close enough
+        if (this.tongueLength < 60) {
+            this._releaseTongue();
+        }
+    }
+
+    /**
+     * Handle tongue attached to platform state
+     * @private
+     */
+    _handleTonguePlatformAttached() {
+        if (!this.tongueAttachedPlatform) return;
+
+        const dx = this.tongueAttachPoint.x - this.sprite.x;
+        const dy = this.tongueAttachPoint.y - this.sprite.y;
+        const d = dist(0, 0, dx, dy);
+
+        if (d > 30) {
+            // Pull player toward attach point
+            const { dirX, dirY } = GameUtils.normalizeVector(dx, dy);
+            this.sprite.velocity.x = dirX * this.grapplePullSpeed;
+            this.sprite.velocity.y = dirY * this.grapplePullSpeed;
+        } else {
+            // Close enough, release
+            this._releaseTongue();
+        }
+
+        // Update tongue visual
+        this.tongueEndX = this.tongueAttachPoint.x;
+        this.tongueEndY = this.tongueAttachPoint.y;
+        this.tongueLength = d;
+    }
+
+    /**
+     * Handle tongue retracting state
+     * @private
+     */
+    _handleTongueRetracting() {
+        this.tongueLength -= this.tongueRetractSpeed;
+        if (this.tongueLength <= 0) {
+            this.tongueLength = 0;
+            this.tongueState = 'idle';
+        }
+    }
+
+    /**
+     * Check if tongue tip hit a platform
+     * @private
+     * @param {Sprite} platform
+     * @returns {boolean}
+     */
+    _checkTongueHitPlatform(platform) {
+        return GameUtils.pointInRect(
+            this.tongueEndX, this.tongueEndY,
+            platform.x, platform.y,
+            platform.width, platform.height
+        );
+    }
+
+    /**
+     * Draw the tongue
+     */
     drawTongue() {
         if (this.tongueState === 'idle') return;
 
         push();
         stroke(this.tongueColor);
         strokeWeight(this.tongueThickness);
-
-        // Draw tongue line
         line(this.sprite.x, this.sprite.y, this.tongueEndX, this.tongueEndY);
 
-        // Draw tongue tip (circle)
         fill(this.tongueColor);
         noStroke();
         ellipse(this.tongueEndX, this.tongueEndY, this.tongueThickness + 4);
-
         pop();
     }
 
-    // Handle player movement input
+    // ==================== MOVEMENT ====================
+
+    /**
+     * Handle player movement input
+     */
     handleMovement() {
-        // Track when player was last on ground
+        this._updateGroundedTime();
+        this.checkWallCollision();
+        this._handleWallSlide();
+        this._handleHorizontalMovement();
+        this._handleJumpInput();
+    }
+
+    /**
+     * Track when player was last on ground
+     * @private
+     */
+    _updateGroundedTime() {
         if (this.platforms && this.sprite.colliding(this.platforms)) {
             this.lastGroundedTime = millis();
         }
+    }
 
-        // Check for wall collision
-        this.checkWallCollision();
-
-        // Wall slide - slow down falling when on wall
+    /**
+     * Apply wall slide slowdown
+     * @private
+     */
+    _handleWallSlide() {
         if (this.isOnWall && this.sprite.velocity.y > this.wallSlideSpeed) {
             this.sprite.velocity.y = this.wallSlideSpeed;
         }
+    }
 
-        // Horizontal movement
-        if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) { // Left or A
+    /**
+     * Handle horizontal movement input
+     * @private
+     */
+    _handleHorizontalMovement() {
+        if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) {
             this.sprite.velocity.x = -this.moveSpeed;
-        } else if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) { // Right or D
+        } else if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) {
             this.sprite.velocity.x = this.moveSpeed;
         } else {
             this.sprite.velocity.x = 0;
         }
+    }
 
-        // Jump control
-        if (kb.presses('space') || kb.presses('w') || kb.presses('up_arrow')) {
-            // Regular jump if on platform OR within coyote time
-            if (this.canJump()) {
-                this.sprite.velocity.y = -this.jumpForce;
-                // Reset coyote time after jumping so they can't double jump
-                this.lastGroundedTime = 0;
-            }
-            // Wall jump if on wall or within wall coyote time
-            else if (this.canWallJump()) {
-                // Jump up and away from the wall
-                this.sprite.velocity.y = -this.wallJumpForceY;
-                this.sprite.velocity.x = this.wallJumpForceX * this.lastWallDirection * -1; // Push away from wall
-                // Reset wall jump time
-                this.lastWallTime = 0;
-            }
+    /**
+     * Handle jump input (regular and wall jump)
+     * @private
+     */
+    _handleJumpInput() {
+        if (!kb.presses('space') && !kb.presses('w') && !kb.presses('up_arrow')) return;
+
+        if (this.canJump()) {
+            // Regular jump
+            this.sprite.velocity.y = -this.jumpForce;
+            this.lastGroundedTime = 0;
+        } else if (this.canWallJump()) {
+            // Wall jump
+            this.sprite.velocity.y = -this.wallJumpForceY;
+            this.sprite.velocity.x = this.wallJumpForceX * this.lastWallDirection * -1;
+            this.lastWallTime = 0;
         }
     }
 
-    // Keep player within canvas bounds
+    /**
+     * Keep player within canvas bounds
+     */
     keepInBounds() {
-        if (this.sprite.x < 0) this.sprite.x = 0;
-        if (this.sprite.x > width) this.sprite.x = width;
+        this.sprite.x = GameUtils.clamp(this.sprite.x, 0, width);
     }
 
-    // Reset player to a position
+    /**
+     * Reset player to a position
+     * @param {number} x
+     * @param {number} y
+     */
     reset(x, y) {
         this.sprite.x = x;
         this.sprite.y = y;
@@ -433,7 +554,11 @@ class Player {
         this.tongueAttachedPlatform = null;
     }
 
-    // Update player (call in draw)
+    // ==================== UPDATE ====================
+
+    /**
+     * Main update method - call in draw()
+     */
     update() {
         this.handleMovement();
         this.handleTongue();
@@ -442,11 +567,10 @@ class Player {
         this.drawTongue();
     }
 
-    // Getters for position
+    // ==================== POSITION ACCESSORS ====================
+
     get x() { return this.sprite.x; }
     get y() { return this.sprite.y; }
-
-    // Setters for position
     set x(val) { this.sprite.x = val; }
     set y(val) { this.sprite.y = val; }
 }

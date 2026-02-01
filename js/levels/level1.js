@@ -18,8 +18,8 @@ const Level1Config = {
         color: 'green',
         moveSpeed: 5,
         jumpForce: 8,
-        getSpawnX: function() { return Level1Config.jail.x + Level1Config.jail.width / 2; },
-        getSpawnY: function() { return Level1Config.jail.getY() + Level1Config.jail.height / 2; }
+        getSpawnX: function () { return Level1Config.jail.x + Level1Config.jail.width / 2; },
+        getSpawnY: function () { return Level1Config.jail.getY() + Level1Config.jail.height / 2; }
     },
 
     // Enemy settings
@@ -35,8 +35,8 @@ const Level1Config = {
         shieldHealth: 3,
         shieldColor: 'cyan',
         shieldRadius: 35,
-        getX: function() { return Level1Config.jail.x + Level1Config.jail.width + 150; },
-        getY: function() { return Level1Config.jail.getY() + Level1Config.jail.height / 2; }
+        getX: function () { return Level1Config.jail.x + Level1Config.jail.width + 150; },
+        getY: function () { return Level1Config.jail.getY() + Level1Config.jail.height / 2; }
     },
 
     // Instructions
@@ -194,7 +194,7 @@ function setupRestartCallback() {
  */
 function cleanupLevelObjects() {
     const levelObjects = [jailBackWall, jailCeiling, jailRightWall, waitingEnemy];
-    
+
     for (let obj of levelObjects) {
         if (obj && obj.remove) {
             obj.remove();

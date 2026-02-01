@@ -23,11 +23,11 @@ class Enemy {
         this.sprite.color = options.color || 'red';
         this.sprite.bounciness = options.bounciness || 0.2;
         this.sprite.collider = options.collider || 'dynamic';
-        
+
         if (options.shape === 'circle') {
             this.sprite.diameter = options.diameter || 40;
         }
-        
+
         this.pullFriction = options.pullFriction || 0.9;
         this.hitRadius = options.hitRadius || Math.max(this.sprite.width, this.sprite.height) / 2 + 10;
         this.isTargeted = false;
@@ -178,8 +178,8 @@ class Enemy {
             const checkY = this.sprite.y + (dirY * distance * t);
 
             for (let platform of platforms) {
-                if (GameUtils.pointInRect(checkX, checkY, 
-                    platform.x, platform.y, 
+                if (GameUtils.pointInRect(checkX, checkY,
+                    platform.x, platform.y,
                     platform.width, platform.height)) {
                     return false;
                 }
@@ -290,7 +290,7 @@ class Enemy {
             noFill();
             stroke(255, 0, 0, 150);
             strokeWeight(3);
-            
+
             if (this.sprite.diameter) {
                 ellipse(this.sprite.x, this.sprite.y, this.sprite.diameter + 10);
             } else {
@@ -313,7 +313,7 @@ class Enemy {
         this._updateShieldFlash();
 
         const alpha = this._calculateShieldAlpha();
-        const angleToPlayer = player ? 
+        const angleToPlayer = player ?
             atan2(player.sprite.y - this.sprite.y, player.sprite.x - this.sprite.x) : 0;
 
         translate(this.sprite.x, this.sprite.y);
@@ -380,7 +380,7 @@ class Enemy {
     _drawShieldEnergyLines() {
         strokeWeight(1);
         const numLines = 5;
-        
+
         for (let i = 1; i < numLines; i++) {
             const t = i / numLines;
             const arcAngle = map(t, 0, 1, -HALF_PI, HALF_PI);
@@ -398,7 +398,7 @@ class Enemy {
      */
     _drawShieldHealthIndicators(alpha) {
         noStroke();
-        
+
         if (this.shieldFlashing) {
             fill(255, 255, 255, alpha);
         } else {

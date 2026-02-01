@@ -1,38 +1,43 @@
 # p5.js with p5.play Project
 
-A modular game project using p5.js and the p5.play extension.
+A modular platformer game using p5.js and the p5.play extension.
 
 ## Project Structure
 
 ```
 project-weak-good/
 ├── index.html              # Main entry point (loads current level)
-├── sketch.js               # (Legacy - can be removed)
+├── sketch.js               # (Legacy reference file)
 ├── js/
+│   ├── utils/
+│   │   └── helpers.js      # Shared utility functions & color palettes
 │   ├── classes/            # Reusable game classes
-│   │   ├── Game.js         # Core game manager
-│   │   ├── Player.js       # Player class with movement
+│   │   ├── Game.js         # Core game manager (textures, state, UI)
+│   │   ├── Player.js       # Player with movement, tongue, wall jump
+│   │   ├── Enemy.js        # Enemies with shooting, shields
+│   │   ├── HealthBar.js    # Visual health display with hearts
+│   │   ├── StaticPlatform.js
 │   │   └── TeleportingPlatform.js
-│   └── levels/             # Individual level sketches
-│       ├── level1.js       # Introduction level
-│       └── level2.js       # Second level example
-├── assets/
-│   ├── images/             # Image assets
-│   └── sounds/             # Sound assets
-└── README.md
+│   └── levels/             # Level files
+│       ├── level1.js       # Jail Cell Escape
+│       ├── level2.js       # Multiple Platforms
+│       └── levelTemplate.js # Template for new levels
+└── assets/
+    ├── images/
+    └── sounds/
 ```
 
 ## Getting Started
 
-1. Open `index.html` in a web browser
-2. Or press `F5` in VS Code to launch with debugging
+1. Run `python3 -m http.server 8000` in the project folder
+2. Open `http://localhost:8000` in a browser
+3. Or use the VS Code task: `Run p5.js Project`
 
 ## Switching Levels
 
-To switch between levels, edit `index.html` and change the level script:
+Edit `index.html` and change the level script at the bottom:
 
 ```html
-<!-- Change this line to load different levels -->
 <script src="js/levels/level1.js"></script>
 <!-- or -->
 <script src="js/levels/level2.js"></script>
@@ -40,75 +45,98 @@ To switch between levels, edit `index.html` and change the level script:
 
 ## Creating a New Level
 
-1. Create a new file in `js/levels/` (e.g., `level3.js`)
-2. Use this template:
+1. Copy `js/levels/levelTemplate.js` to a new file (e.g., `level3.js`)
+2. Edit the `LevelConfig` object to define your level
+3. Update `index.html` to load your new level
+
+### Level Configuration Example
 
 ```javascript
-function setup() {
-    createCanvas(windowWidth, windowHeight);
-    
-    game.init();
-    game.setupWorld(20);
-    
-    // Create your player
-    game.createPlayer(width / 2, height / 2, {
+const LevelConfig = {
+    player: {
+        getSpawnX: () => 100,
+        getSpawnY: () => height / 2,
         color: 'green',
         moveSpeed: 5,
         jumpForce: 8
-    });
-    
-    // Create platforms
-    game.createGround('green');
-    game.createPlatform(x, y, width, height, 'color');
-    
-    // Add your custom elements...
-}
+    },
 
-function draw() {
-    background(220);
-    
-    game.showInstructions(['Your instructions here']);
-    game.player.update();
-    game.checkPlayerFell(width / 2, height / 2);
-}
+    staticPlatforms: [
+        { x: 300, y: 400, width: 150, height: 20, color: 'gray', useTexture: true }
+    ],
 
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-}
+    teleportingPlatforms: [
+        {
+            pointA: { x: 200, y: 300 },
+            pointB: { x: 400, y: 200 },
+            dimA: { width: 100, height: 20 },
+            dimB: { width: 100, height: 20 },
+            colorA: 'red',
+            colorB: 'pink'
+        }
+    ],
+
+    enemies: [
+        {
+            x: 500, y: 300,
+            hasShield: true,
+            shieldHealth: 3
+        }
+    ],
+
+    instructions: ['My Level', 'Custom instructions here']
+};
 ```
 
-3. Update `index.html` to load your new level
-
-## Available Classes
-
-### Player
-- `new Player(x, y, options)` - Create a player
-- `player.update()` - Handle movement (call in draw)
-- `player.reset(x, y)` - Reset position
-- `player.setPlatforms(group)` - Set collision group
-
-### TeleportingPlatform
-- `new TeleportingPlatform(pointA, pointB, dimA, dimB, colorA, colorB, platformGroup)`
-- `platform.update()` - Check for shift press
-- `platform.teleport()` - Manually teleport
+## Core Classes
 
 ### Game
-- `game.init()` - Initialize game
-- `game.setupWorld(gravity)` - Set gravity
-- `game.createPlayer(x, y, options)` - Create player
-- `game.createGround(color)` - Create ground platform
-- `game.createPlatform(x, y, w, h, color)` - Create platform
-- `game.showInstructions(array)` - Display text
-- `game.checkPlayerFell(resetX, resetY)` - Reset if fallen
+The main game manager. Use it to:
+- `game.init()` - Initialize platforms group
+- `game.createPlayer(x, y, options)` - Create the player
+- `game.createGround(color)` - Create textured ground
+- `game.createPlatform(x, y, w, h, color)` - Create simple platform
+- `game.createHealthBar(maxHealth, options)` - Create health display
+- `game.createPaperBackground()` - Draw textured background
+- `game.createWallTexture(w, h)` - Generate wall texture
+
+### Player
+Player with movement, jumping, wall jumping, and tongue mechanics:
+- Arrow keys / WASD to move
+- Space / W / Up to jump (includes coyote time)
+- Wall slide and wall jump supported
+- Click to shoot tongue (grapple to platforms, pull enemies)
+
+### Enemy
+Enemies with shooting and optional shields:
+- Shoots bullets at player on interval
+- Line-of-sight checking (won't shoot through walls)
+- Optional shield that blocks tongue (breaks after hits)
+
+### StaticPlatform / TeleportingPlatform
+- StaticPlatform: Fixed position, optional wall texture
+- TeleportingPlatform: Press Shift to toggle between two positions
+
+## Utility Functions
+
+Available in `GameUtils`:
+- `pointInRect(px, py, rx, ry, rw, rh)` - Point in rectangle check
+- `normalizeVector(dx, dy)` - Get direction and distance
+- `velocityToward(fromX, fromY, toX, toY, speed)` - Movement velocity
+- `clamp(value, min, max)` - Clamp a number
+
+Color palettes in `ColorPalettes`:
+- `brown`, `redBrown`, `grey`, `red`, `greyEmpty`
+
+Texture helpers in `TextureUtils`:
+- `drawOrganicShape()`, `addPaperFibers()`, `addPixelNoise()`, `addTexturePatches()`
 
 ## Controls
 
-- **Move Left**: Left Arrow or A
-- **Move Right**: Right Arrow or D
-- **Jump**: Space, W, or Up Arrow
-- **Toggle Teleporting Platforms**: Shift
-
-## Learn More
-
-- [p5.js Documentation](https://p5js.org/reference/)
-- [p5.play Documentation](https://p5play.org/learn/)
+| Key | Action |
+|-----|--------|
+| Arrow Keys / WASD | Move |
+| Space / W / Up | Jump |
+| Shift | Teleport platforms |
+| Click | Shoot tongue |
+| R | Restart (when dead) |

@@ -19,15 +19,15 @@ const Level2Config = {
 
     teleportingPlatforms: [
         {
-            pointA: { xRatio: 1/3, yOffset: -250 },
-            pointB: { xRatio: 1/3, yOffset: -400 },
+            pointA: { xRatio: 1 / 3, yOffset: -250 },
+            pointB: { xRatio: 1 / 3, yOffset: -400 },
             dim: { width: 120, height: 20 },
             colorA: 'red',
             colorB: 'pink'
         },
         {
-            pointA: { xRatio: 2/3, yOffset: -300 },
-            pointB: { xRatio: 2/3, yOffset: -450 },
+            pointA: { xRatio: 2 / 3, yOffset: -300 },
+            pointB: { xRatio: 2 / 3, yOffset: -450 },
             dim: { width: 120, height: 20 },
             colorA: 'cyan',
             colorB: 'lightblue'

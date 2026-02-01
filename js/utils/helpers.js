@@ -16,7 +16,7 @@ const GameUtils = {
         const halfW = rw / 2;
         const halfH = rh / 2;
         return px >= rx - halfW && px <= rx + halfW &&
-               py >= ry - halfH && py <= ry + halfH;
+            py >= ry - halfH && py <= ry + halfH;
     },
 
     /**
@@ -37,7 +37,7 @@ const GameUtils = {
         const bBottom = b.y + b.height / 2;
 
         return aLeft < bRight && aRight > bLeft &&
-               aTop < bBottom && aBottom > bTop;
+            aTop < bBottom && aBottom > bTop;
     },
 
     /**

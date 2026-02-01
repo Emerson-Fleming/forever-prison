@@ -77,11 +77,11 @@ class Game {
             this.ground = new this.platforms.Sprite();
             this.ground.collider = 'static';
         }
-        
+
         this._updateGroundPosition();
         this.ground.img = this.createPaperGroundTexture(width, 50);
         this._setupGroundResizeListener();
-        
+
         return this.ground;
     }
 
@@ -102,7 +102,7 @@ class Game {
      */
     _setupGroundResizeListener() {
         if (this._resizeListenerAdded) return;
-        
+
         window.addEventListener('resize', () => {
             this._updateGroundPosition();
             this.ground.img = this.createPaperGroundTexture(width, 50);
@@ -350,7 +350,7 @@ class Game {
     _addWallAccents(cnv, w, h) {
         const accentCount = (w * h) / 600;
         cnv.noStroke();
-        
+
         for (let i = 0; i < accentCount; i++) {
             const isHighlight = random() > 0.5;
             if (isHighlight) {
@@ -369,7 +369,7 @@ class Game {
     _addWallGrain(cnv, w, h, palette) {
         const dotCount = (w * h) / 120;
         cnv.noStroke();
-        
+
         for (let i = 0; i < dotCount; i++) {
             const shade = random(palette);
             cnv.fill(shade.r, shade.g, shade.b, random(20, 50));

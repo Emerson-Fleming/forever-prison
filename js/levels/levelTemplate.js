@@ -139,8 +139,6 @@ function draw() {
     if (game.healthBar) {
         game.healthBar.update();
     }
-
-    game.drawGameOver();
 }
 
 function windowResized() {

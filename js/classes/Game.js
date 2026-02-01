@@ -10,7 +10,7 @@ class Game {
         this.isGameOver = false;
         this.gameOverCallback = null;
         this.backgroundImage = null; // Cached background
-        
+
         // Camera/scrolling settings
         this.camera = {
             x: 0,
@@ -35,11 +35,11 @@ class Game {
         this.platforms = new Group();
         this.platforms.color = 'green';
         this.platforms.collider = 'static';
-        
+
         // Initialize camera position
         camera.x = width / 2;
         camera.y = height / 2;
-        
+
         return this;
     }
 
@@ -153,11 +153,11 @@ class Game {
         fill(0);
         textSize(16);
         textAlign(CENTER);
-        
+
         // Draw in world coordinates (camera position + screen position)
         const screenCenterX = camera.x;
         const screenTopY = camera.y - height / 2;
-        
+
         instructions.forEach((text, index) => {
             window.text(text, screenCenterX, screenTopY + 30 + (index * 20));
         });
@@ -165,35 +165,10 @@ class Game {
     }
 
     /**
-     * Draw game over overlay with restart option (fixed to screen)
+     * Redirect to game over page
      */
-    drawGameOver() {
-        if (!this.isGameOver) return;
-
-        push();
-        // Calculate screen bounds in world coordinates
-        const screenLeft = camera.x - width / 2;
-        const screenTop = camera.y - height / 2;
-        
-        // Overlay
-        fill(0, 0, 0, 180);
-        rect(screenLeft, screenTop, width, height);
-
-        // Game Over text
-        fill(255, 0, 0);
-        textAlign(CENTER, CENTER);
-        textSize(64);
-        text('GAME OVER', camera.x, camera.y - 50);
-
-        // Restart instruction
-        fill(255);
-        textSize(24);
-        text('Press R to Restart', camera.x, camera.y + 20);
-        pop();
-
-        if (kb.presses('r')) {
-            this.restartLevel();
-        }
+    redirectToGameOver() {
+        window.location.href = 'gameover.html';
     }
 
     // ==================== GAME STATE ====================
@@ -293,6 +268,7 @@ class Game {
     checkGameOver() {
         if (this.healthBar && this.healthBar.isDead() && !this.isGameOver) {
             this.isGameOver = true;
+            this.redirectToGameOver();
             return true;
         }
         return false;

@@ -233,7 +233,7 @@ class HealthBar {
         // Calculate screen position in world coordinates
         const screenLeft = camera.x - width / 2;
         const screenTop = camera.y - height / 2;
-        
+
         for (let i = 0; i < this.maxHealth; i++) {
             const heartX = screenLeft + this.x + (i * (this.heartSize + this.heartSpacing));
             const heartY = screenTop + this.y;

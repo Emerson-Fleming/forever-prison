@@ -100,8 +100,6 @@ function draw() {
     if (game.healthBar) {
         game.healthBar.update();
     }
-
-    game.drawGameOver();
 }
 
 function windowResized() {
@@ -155,16 +153,16 @@ function createLevelGeometry() {
 
     // Add platforms to the right for scrolling demonstration
     const groundY = height - 50;
-    
+
     // Platform 1 - floating platform
     new StaticPlatform(600, groundY - 100, 150, 20, 'brown', game.platforms, false);
-    
+
     // Platform 2 - higher platform
     new StaticPlatform(850, groundY - 200, 120, 20, 'brown', game.platforms, false);
-    
+
     // Platform 3 - far right
     new StaticPlatform(1100, groundY - 150, 150, 20, 'brown', game.platforms, false);
-    
+
     // Platform 4 - very far right
     new StaticPlatform(1400, groundY - 180, 120, 20, 'brown', game.platforms, false);
 }

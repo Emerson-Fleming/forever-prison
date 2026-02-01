@@ -67,11 +67,11 @@ class Game {
 
         // Base brown colors (RGB for different shades)
         let brownShades = [
-            { r: 139, g: 90, b: 43 },   // Dark brown
-            { r: 160, g: 110, b: 60 },  // Medium-dark brown
-            { r: 180, g: 130, b: 80 },  // Medium brown
-            { r: 200, g: 150, b: 100 }, // Light-medium brown
-            { r: 210, g: 165, b: 115 }  // Light brown
+            { r: 62, g: 36, b: 19 },   // Very dark brown (deep shadow)
+            { r: 191, g: 75, b: 17 },  // Reddish brown (warm highlight)
+            { r: 119, g: 59, b: 23 },  // Classic medium brown (base tone)
+            { r: 26, g: 15, b: 3 },    // Almost black brown (deepest shadow)
+            { r: 110, g: 66, b: 39 }   // Light brown (highlight/edge)
         ];
 
         // Fill with base medium brown

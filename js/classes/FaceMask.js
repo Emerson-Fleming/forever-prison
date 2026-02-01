@@ -96,9 +96,9 @@ class FaceMask {
         push();
         // Use HALF_PI directly (90 degrees in radians)
         if (this.maskRotation === -90) {
-            rotate(-110);
-        } else if (this.maskRotation === 90) {
             rotate(80);
+        } else if (this.maskRotation === 90) {
+            rotate(-110);
         }
         if (this.maskImg) {
             image(this.maskImg, 0, 0, this.size, this.size);

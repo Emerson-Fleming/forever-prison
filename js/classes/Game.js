@@ -482,6 +482,51 @@ class Game {
     }
 
     /**
+     * Create textured paper platform with muted brown shades
+     * @param {number} w - Width
+     * @param {number} h - Height
+     * @param {string} shade - 'light', 'medium', or 'dark' for color variation
+     * @returns {Graphics} - p5 Graphics object
+     */
+    createPaperPlatformTexture(w, h, shade = 'medium') {
+        let cnv = createGraphics(w, h);
+        const palette = ColorPalettes.brown;
+
+        // Muted base colors based on shade
+        const baseColors = {
+            light: { r: 140, g: 110, b: 80 },    // Light tan
+            medium: { r: 110, g: 80, b: 60 },    // Medium brown
+            dark: { r: 85, g: 60, b: 45 }        // Dark brown
+        };
+
+        const base = baseColors[shade] || baseColors.medium;
+        cnv.background(base.r, base.g, base.b);
+
+        // Add subtle texture patches
+        const patchCount = (w * h) / 100;
+        TextureUtils.addTexturePatches(cnv, w, h, palette, patchCount, {
+            minAlpha: 15, maxAlpha: 35,
+            minSize: w * 0.2, maxSize: w * 0.4,
+            angleStep: 0.8
+        });
+
+        // Add paper fibers for that papery look
+        const fiberCount = (w * h) / 60;
+        TextureUtils.addPaperFibers(cnv, w, h, palette, fiberCount, {
+            minAlpha: 10, maxAlpha: 25,
+            minWeight: 0.5, maxWeight: 1.5,
+            minLength: w * 0.1, maxLength: w * 0.3,
+            useCurves: true
+        });
+
+        // Add subtle noise
+        TextureUtils.addPixelNoise(cnv, 6);
+        cnv.filter(BLUR, 0.4);
+
+        return cnv;
+    }
+
+    /**
      * Create and draw paper background (cached for performance)
      */
     createPaperBackground() {

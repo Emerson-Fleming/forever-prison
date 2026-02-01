@@ -8,15 +8,20 @@ class TeleportingPlatform {
      * @param {Object} pointB - Second position {x, y}
      * @param {Object} dimA - First dimensions {width, height}
      * @param {Object} dimB - Second dimensions {width, height}
-     * @param {string} colorA - First state color
-     * @param {string} colorB - Second state color
+     * @param {string} colorA - First state color (or 'light', 'medium', 'dark' for paper)
+     * @param {string} colorB - Second state color (or 'light', 'medium', 'dark' for paper)
      * @param {Group} platformGroup - p5play platform group
+     * @param {boolean} usePaperTexture - Whether to use paper texture (default true)
      */
-    constructor(pointA, pointB, dimA, dimB, colorA, colorB, platformGroup) {
+    constructor(pointA, pointB, dimA, dimB, colorA, colorB, platformGroup, usePaperTexture = true) {
         // Store state configurations
         this.stateA = { pos: pointA, dim: dimA, color: colorA };
         this.stateB = { pos: pointB, dim: dimB, color: colorB };
         this.atPointA = true;
+        this.usePaperTexture = usePaperTexture;
+
+        // Cache for textures
+        this.textureCache = { A: null, B: null };
 
         // Outline settings
         this.outlineStrokeWeight = 2;
@@ -31,8 +36,40 @@ class TeleportingPlatform {
      */
     _createSprite(platformGroup) {
         this.sprite = new platformGroup.Sprite();
+        
+        // Generate textures for both states if using paper texture
+        if (this.usePaperTexture) {
+            this.textureCache.A = this._generatePaperTexture(this.stateA);
+            this.textureCache.B = this._generatePaperTexture(this.stateB);
+        }
+        
         this._applyState(this.stateA);
         this.sprite.collider = 'kinematic';
+    }
+
+    /**
+     * Generate paper texture for a state
+     * @private
+     */
+    _generatePaperTexture(state) {
+        const shade = this._getPaperShade(state.color);
+        return game.createPaperPlatformTexture(state.dim.width, state.dim.height, shade);
+    }
+
+    /**
+     * Get paper shade from color string
+     * @private
+     */
+    _getPaperShade(color) {
+        const shadeMap = {
+            'light': 'light',
+            'tan': 'light',
+            'medium': 'medium',
+            'brown': 'medium',
+            'dark': 'dark',
+            'darkbrown': 'dark'
+        };
+        return shadeMap[color.toLowerCase()] || 'medium';
     }
 
     /**
@@ -44,7 +81,14 @@ class TeleportingPlatform {
         this.sprite.y = state.pos.y;
         this.sprite.width = state.dim.width;
         this.sprite.height = state.dim.height;
-        this.sprite.color = state.color;
+        
+        if (this.usePaperTexture) {
+            // Use cached texture for this state
+            const texture = this.atPointA ? this.textureCache.A : this.textureCache.B;
+            this.sprite.img = texture;
+        } else {
+            this.sprite.color = state.color;
+        }
     }
 
     /**
@@ -81,7 +125,8 @@ class TeleportingPlatform {
         const alt = this._getAlternateState();
 
         push();
-        stroke(alt.color);
+        // Use a muted brown color for the outline instead of the platform color
+        stroke(110, 80, 60, 180);  // Muted brown with some transparency
         strokeWeight(this.outlineStrokeWeight);
         noFill();
         drawingContext.setLineDash(this.outlineDashPattern);

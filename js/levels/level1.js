@@ -116,6 +116,9 @@ function preload() {
         enemy4: loadImage('assets/images/enemy4-small.png'),
         enemy5: loadImage('assets/images/enemy5-small.png')
     };
+
+    // Load enemy shield mask image
+    window.enemyShieldMask = loadImage('assets/images/enemy-mask.png');
 }
 
 function setup() {
@@ -543,8 +546,8 @@ function createLevelGeometry() {
         { x: 550, y: groundY - 270 },
         { width: 150, height: 20 },
         { width: 150, height: 20 },
-        'brown',
-        'sienna',
+        'medium',
+        'light',
         game.platforms
     );
 
@@ -554,8 +557,8 @@ function createLevelGeometry() {
         { x: 950, y: groundY - 180 },
         { width: 120, height: 20 },
         { width: 120, height: 20 },
-        'brown',
-        'sienna',
+        'medium',
+        'dark',
         game.platforms
     );
 
@@ -565,8 +568,8 @@ function createLevelGeometry() {
         { x: 1150, y: groundY - 320 },
         { width: 130, height: 20 },
         { width: 130, height: 20 },
-        'brown',
-        'sienna',
+        'dark',
+        'light',
         game.platforms
     );
 
@@ -576,8 +579,8 @@ function createLevelGeometry() {
         { x: 1450, y: groundY - 360 },
         { width: 120, height: 20 },
         { width: 120, height: 20 },
-        'brown',
-        'sienna',
+        'light',
+        'medium',
         game.platforms
     );
 
@@ -587,8 +590,8 @@ function createLevelGeometry() {
         { x: 1850, y: groundY - 130 },
         { width: 100, height: 20 },
         { width: 100, height: 20 },
-        'brown',
-        'sienna',
+        'medium',
+        'light',
         game.platforms
     );
 
@@ -598,8 +601,8 @@ function createLevelGeometry() {
         { x: 2150, y: groundY - 380 },
         { width: 130, height: 20 },
         { width: 130, height: 20 },
-        'brown',
-        'sienna',
+        'dark',
+        'medium',
         game.platforms
     );
 
@@ -609,18 +612,18 @@ function createLevelGeometry() {
         { x: 2650, y: groundY - 330 },
         { width: 120, height: 20 },
         { width: 120, height: 20 },
-        'brown',
-        'sienna',
+        'light',
+        'dark',
         game.platforms
     );
 
     // Add static platforms for variety (positioned to not overlap with teleporting platforms)
-    staticPlatform1 = new StaticPlatform(380, groundY - 150, 100, 20, 'green', game.platforms);
-    staticPlatform2 = new StaticPlatform(720, groundY - 100, 90, 20, 'green', game.platforms);
-    staticPlatform3 = new StaticPlatform(1300, groundY - 220, 110, 20, 'green', game.platforms);
-    staticPlatform4 = new StaticPlatform(1650, groundY - 280, 100, 20, 'green', game.platforms);
-    staticPlatform5 = new StaticPlatform(2000, groundY - 240, 100, 20, 'green', game.platforms);
-    staticPlatform6 = new StaticPlatform(2850, groundY - 180, 150, 20, 'green', game.platforms);
+    staticPlatform1 = new StaticPlatform(380, groundY - 150, 100, 20, 'light', game.platforms);
+    staticPlatform2 = new StaticPlatform(720, groundY - 100, 90, 20, 'medium', game.platforms);
+    staticPlatform3 = new StaticPlatform(1300, groundY - 220, 110, 20, 'dark', game.platforms);
+    staticPlatform4 = new StaticPlatform(1650, groundY - 280, 100, 20, 'light', game.platforms);
+    staticPlatform5 = new StaticPlatform(2000, groundY - 240, 100, 20, 'medium', game.platforms);
+    staticPlatform6 = new StaticPlatform(2850, groundY - 180, 150, 20, 'dark', game.platforms);
 }
 
 /**

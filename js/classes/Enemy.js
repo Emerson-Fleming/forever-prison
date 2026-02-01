@@ -359,28 +359,47 @@ class Enemy {
     }
 
     /**
-     * Draw shield arc facing the player
+     * Draw shield mask image facing the player
      * @param {Player} player - Player object for orientation
      */
     drawShield(player) {
         if (!this.hasShield) return;
+        if (!window.enemyShieldMask) return; // Safety check
 
         push();
         this._updateShieldFlash();
 
         const alpha = this._calculateShieldAlpha();
-        const angleToPlayer = player ?
-            atan2(player.sprite.y - this.sprite.y, player.sprite.x - this.sprite.x) : 0;
-
+        
+        // Determine which side the player is on
+        const playerOnRight = player && player.sprite.x > this.sprite.x;
+        
         // Draw in world coordinates - p5play's camera handles transformation
         translate(this.sprite.x, this.sprite.y);
-        rotate(angleToPlayer);
+        
+        // Keep original color, only apply alpha and flash effect
+        if (this.shieldFlashing) {
+            tint(255, 255, 255); // White flash when hit
+        } else {
+            noTint(); // Keep original mask color
+        }
 
-        this._drawShieldArc(alpha);
-        this._drawShieldEdges();
-        this._drawShieldEnergyLines();
-        this._drawShieldHealthIndicators(alpha);
+        // Draw the shield mask image
+        // Position it on the side facing the player, always upright
+        const maskSize = this.shieldRadius * 2.8; // Increased size
+        const offsetDistance = this.shieldRadius * 0.5; // Push it out from enemy
+        imageMode(CENTER);
+        
+        if (playerOnRight) {
+            // Player on right: shield on right side, upright
+            image(window.enemyShieldMask, offsetDistance, 0, maskSize, maskSize);
+        } else {
+            // Player on left: shield on left side, upright (flip horizontally)
+            scale(-1, 1); // Mirror horizontally
+            image(window.enemyShieldMask, offsetDistance, 0, maskSize, maskSize);
+        }
 
+        noTint();
         pop();
     }
 
@@ -401,52 +420,6 @@ class Enemy {
     _calculateShieldAlpha() {
         const baseAlpha = map(this.currentShieldHealth, 0, this.shieldHealth, 50, 150);
         return this.shieldFlashing ? 200 : baseAlpha;
-    }
-
-    /**
-     * Draw the main shield arc
-     * @private
-     */
-    _drawShieldArc(alpha) {
-        noFill();
-        strokeWeight(3);
-
-        if (this.shieldFlashing) {
-            stroke(255, 255, 255, alpha);
-        } else {
-            stroke(red(this.shieldColor), green(this.shieldColor), blue(this.shieldColor), alpha);
-        }
-
-        arc(0, 0, this.shieldRadius * 2, this.shieldRadius * 2, -HALF_PI, HALF_PI);
-    }
-
-    /**
-     * Draw shield edge lines
-     * @private
-     */
-    _drawShieldEdges() {
-        const edgeLength = 15;
-        line(0, -this.shieldRadius, 0, -this.shieldRadius - edgeLength);
-        line(0, this.shieldRadius, 0, this.shieldRadius + edgeLength);
-    }
-
-    /**
-     * Draw energy lines across shield
-     * @private
-     */
-    _drawShieldEnergyLines() {
-        strokeWeight(1);
-        const numLines = 5;
-
-        for (let i = 1; i < numLines; i++) {
-            const t = i / numLines;
-            const arcAngle = map(t, 0, 1, -HALF_PI, HALF_PI);
-            const x1 = cos(arcAngle) * (this.shieldRadius - 10);
-            const y1 = sin(arcAngle) * (this.shieldRadius - 10);
-            const x2 = cos(arcAngle) * (this.shieldRadius + 5);
-            const y2 = sin(arcAngle) * (this.shieldRadius + 5);
-            line(x1, y1, x2, y2);
-        }
     }
 
     /**
@@ -486,7 +459,7 @@ class Enemy {
 
         // Move toward player if AI is enabled
         if (player && this.moveEnabled) {
-            this._moveTowardPlayer(player);
+            this._moveTowardPlayer(player, platforms);
         }
 
         this.drawShield(player);
@@ -507,13 +480,20 @@ class Enemy {
      * Move enemy slowly toward the player
      * @private
      */
-    _moveTowardPlayer(player) {
+    _moveTowardPlayer(player, platforms) {
         const dx = player.x - this.sprite.x;
         const dy = player.y - this.sprite.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Only move if player is within detection range and outside stop distance
         if (distance < this.detectionRange && distance > this.stopDistance) {
+            // Check if there's a wall between enemy and player
+            if (platforms && this._hasVerticalWallBetween(player, platforms)) {
+                // Stop moving if there's a wall
+                this.sprite.velocity.x = 0;
+                return;
+            }
+
             // Normalize direction and apply move speed
             const dirX = dx / distance;
 
@@ -528,6 +508,51 @@ class Enemy {
             // Stop moving if too close or too far
             this.sprite.velocity.x = 0;
         }
+    }
+
+    /**
+     * Check if there's a vertical wall between enemy and player
+     * @private
+     */
+    _hasVerticalWallBetween(player, platforms) {
+        const { dirX, dirY, distance } = GameUtils.normalizeVector(
+            player.x - this.sprite.x,
+            player.y - this.sprite.y
+        );
+
+        if (distance === 0) return false;
+
+        // Check points along the path to the player
+        const steps = Math.ceil(distance / 10);
+
+        for (let i = 1; i < steps; i++) {
+            const t = i / steps;
+            const checkX = this.sprite.x + (dirX * distance * t);
+            const checkY = this.sprite.y + (dirY * distance * t);
+
+            for (let platform of platforms) {
+                // Check if this point is inside a platform
+                if (GameUtils.pointInRect(checkX, checkY,
+                    platform.x, platform.y,
+                    platform.width, platform.height)) {
+                    
+                    // Check if it's a vertical wall (tall and narrow-ish)
+                    // or if the platform blocks horizontal movement
+                    const isVerticalWall = platform.height > platform.width * 0.8;
+                    
+                    // Also check if the platform is significantly to the side of both enemy and player
+                    const platformBetween = 
+                        (this.sprite.x < platform.x && platform.x < player.x) ||
+                        (player.x < platform.x && platform.x < this.sprite.x);
+                    
+                    if (isVerticalWall || platformBetween) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -8,15 +8,17 @@ class StaticPlatform {
      * @param {number} y - Center y position
      * @param {number} width - Platform width
      * @param {number} height - Platform height
-     * @param {string} color - Platform color
+     * @param {string} color - Platform color (or 'light', 'medium', 'dark' for paper texture)
      * @param {Group} platformGroup - p5play platform group
-     * @param {boolean} useTexture - Whether to use wall texture
+     * @param {boolean} useTexture - Whether to use wall texture (defaults to paper texture)
+     * @param {string} textureType - 'paper' or 'wall' texture type
      */
-    constructor(x, y, width, height, color, platformGroup, useTexture = false) {
+    constructor(x, y, width, height, color, platformGroup, useTexture = true, textureType = 'paper') {
         this.position = { x, y };
         this.dimensions = { width, height };
         this.color = color;
         this.useTexture = useTexture;
+        this.textureType = textureType;
         this.textureCache = null;
 
         this._createSprite(platformGroup);
@@ -41,12 +43,42 @@ class StaticPlatform {
      * @private
      */
     _applyAppearance() {
-        if (this._shouldUseWallTexture()) {
-            this.textureCache = game.createWallTexture(this.dimensions.width, this.dimensions.height);
-            this.sprite.img = this.textureCache;
+        if (this.useTexture) {
+            if (this.textureType === 'paper') {
+                // Use paper texture with shade variants
+                const shade = this._getPaperShade();
+                this.textureCache = game.createPaperPlatformTexture(
+                    this.dimensions.width, 
+                    this.dimensions.height,
+                    shade
+                );
+                this.sprite.img = this.textureCache;
+            } else if (this._shouldUseWallTexture()) {
+                // Use wall texture for grey platforms
+                this.textureCache = game.createWallTexture(this.dimensions.width, this.dimensions.height);
+                this.sprite.img = this.textureCache;
+            } else {
+                this.sprite.color = this.color;
+            }
         } else {
             this.sprite.color = this.color;
         }
+    }
+
+    /**
+     * Get paper shade from color string
+     * @private
+     */
+    _getPaperShade() {
+        const shadeMap = {
+            'light': 'light',
+            'tan': 'light',
+            'medium': 'medium',
+            'brown': 'medium',
+            'dark': 'dark',
+            'darkbrown': 'dark'
+        };
+        return shadeMap[this.color.toLowerCase()] || 'medium';
     }
 
     /**
@@ -70,9 +102,15 @@ class StaticPlatform {
         this.dimensions.height = h;
 
         // Regenerate texture if needed
-        if (this._shouldUseWallTexture()) {
-            this.textureCache = game.createWallTexture(w, h);
-            this.sprite.img = this.textureCache;
+        if (this.useTexture) {
+            if (this.textureType === 'paper') {
+                const shade = this._getPaperShade();
+                this.textureCache = game.createPaperPlatformTexture(w, h, shade);
+                this.sprite.img = this.textureCache;
+            } else if (this._shouldUseWallTexture()) {
+                this.textureCache = game.createWallTexture(w, h);
+                this.sprite.img = this.textureCache;
+            }
         }
     }
 

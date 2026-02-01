@@ -99,7 +99,7 @@ class HealthBar {
     draw() {
         // Disable camera transformation for UI elements
         camera.off();
-        
+
         push();
         // Now we can draw in pure screen coordinates
         for (let i = 0; i < this.maxHealth; i++) {
@@ -109,7 +109,7 @@ class HealthBar {
             this.drawHeart(heartX, heartY, this.heartSize, filled);
         }
         pop();
-        
+
         // Re-enable camera transformation
         camera.on();
     }

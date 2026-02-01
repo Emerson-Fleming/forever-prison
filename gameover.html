@@ -139,6 +139,26 @@
     </div>
 
     <script>
+        // Background music - continues from main game
+        const bgMusic = new Audio('assets/sounds/mask game theme song.wav');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.3;
+
+        // Start music (may need user interaction due to autoplay policy)
+        function startMusic() {
+            bgMusic.play().catch(e => console.log('Waiting for user interaction to play music'));
+        }
+
+        // Try to play immediately (works if coming from game with recent interaction)
+        startMusic();
+
+        // Also play on any click if not already playing
+        document.addEventListener('click', () => {
+            if (bgMusic.paused) {
+                startMusic();
+            }
+        });
+
         // Create floating particles
         const particlesContainer = document.getElementById('particles');
         for (let i = 0; i < 20; i++) {
@@ -151,9 +171,6 @@
             particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
             particlesContainer.appendChild(particle);
         }
-
-        // Play a sound effect if available (optional)
-        // You can add a game over sound here
     </script>
 </body>
 

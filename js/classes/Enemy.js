@@ -31,6 +31,11 @@ class Enemy {
         this.pullFriction = options.pullFriction || 0.9;
         this.hitRadius = options.hitRadius || Math.max(this.sprite.width, this.sprite.height) / 2 + 10;
         this.isTargeted = false;
+        
+        // Enemy health
+        this.maxHealth = options.maxHealth || 3;
+        this.currentHealth = this.maxHealth;
+        this.isDead = false;
     }
 
     /**
@@ -39,6 +44,7 @@ class Enemy {
      */
     _initShield(options) {
         this.hasShield = options.hasShield || false;
+        this.shieldEnabled = this.hasShield; // Track if shield was originally enabled
         this.shieldHealth = options.shieldHealth || 3;
         this.currentShieldHealth = this.shieldHealth;
         this.shieldColor = options.shieldColor || 'cyan';
@@ -46,6 +52,10 @@ class Enemy {
         this.shieldFlashing = false;
         this.shieldFlashTime = 0;
         this.shieldFlashDuration = 200; // ms
+
+        // Shield regeneration
+        this.shieldRegenTime = options.shieldRegenTime || 10000; // 15 seconds default
+        this.shieldDestroyedTime = 0; // When the shield was destroyed
     }
 
     /**
@@ -96,6 +106,22 @@ class Enemy {
 
         if (this.currentShieldHealth <= 0) {
             this.hasShield = false;
+            this.shieldDestroyedTime = millis(); // Track when shield was destroyed
+        }
+    }
+
+    /**
+     * Check if shield should regenerate and restore it
+     * @private
+     */
+    _checkShieldRegen() {
+        // Only regen if shield was originally enabled and is currently down
+        if (this.shieldEnabled && !this.hasShield && this.shieldDestroyedTime > 0) {
+            if (millis() - this.shieldDestroyedTime >= this.shieldRegenTime) {
+                this.hasShield = true;
+                this.currentShieldHealth = this.shieldHealth;
+                this.shieldDestroyedTime = 0;
+            }
         }
     }
 
@@ -116,6 +142,22 @@ class Enemy {
     }
 
     // ==================== SHOOTING ====================
+
+    /**
+     * Take damage and check if enemy should die
+     * @param {number} damage - Amount of damage to take
+     */
+    takeDamage(damage = 1) {
+        if (this.isDead) return;
+        
+        this.currentHealth -= damage;
+        console.log(`Enemy took ${damage} damage! Health: ${this.currentHealth}/${this.maxHealth}`);
+        
+        if (this.currentHealth <= 0) {
+            this.isDead = true;
+            this.remove();
+        }
+    }
 
     /**
      * Shoot a bullet toward a target
@@ -422,6 +464,12 @@ class Enemy {
      * @param {Array} platforms - Platform sprites
      */
     update(player, platforms) {
+        // Don't update if enemy is dead
+        if (this.isDead) return;
+        
+        // Check if shield should regenerate
+        this._checkShieldRegen();
+
         this.drawShield(player);
         this.drawFeedback();
         this.updateBullets(player, platforms);

@@ -8,6 +8,7 @@ class Player {
         this._initTongue(options);
         this._initWallJump(options);
         this._initHealth(options);
+        this._initSword(options);
     }
 
     // ==================== INITIALIZATION ====================
@@ -97,6 +98,28 @@ class Player {
         this.isHit = false;
         this.hitFlashDuration = 300;
         this.hitFlashTime = 0;
+    }
+
+    /**
+     * Initialize sword attack settings
+     * @private
+     */
+    _initSword(options) {
+        this.swordLength = options.swordLength || 60;
+        this.swordWidth = options.swordWidth || 10;
+        this.swordColor = options.swordColor || 'silver';
+        this.swordDamage = options.swordDamage || 1;
+        
+        // Sword attack state
+        this.swordState = 'idle'; // 'idle', 'swinging'
+        this.swordAngle = 0;
+        this.swordSwingDuration = 300; // ms
+        this.swordSwingStartTime = 0;
+        this.swordCooldown = 500; // ms between attacks
+        this.swordLastAttackTime = 0;
+        
+        // Track which direction player is facing
+        this.facingRight = true;
     }
 
     // ==================== SETUP ====================
@@ -514,8 +537,10 @@ class Player {
     _handleHorizontalMovement() {
         if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) {
             this.sprite.velocity.x = -this.moveSpeed;
+            this.facingRight = false;
         } else if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) {
             this.sprite.velocity.x = this.moveSpeed;
+            this.facingRight = true;
         } else {
             this.sprite.velocity.x = 0;
         }
@@ -565,6 +590,109 @@ class Player {
         this.tongueAttachedPlatform = null;
     }
 
+    // ==================== SWORD ATTACK ====================
+
+    /**
+     * Handle sword attack input and logic
+     */
+    handleSwordAttack() {
+        // Check if E key is pressed to start attack
+        if (kb.presses('e') && this.swordState === 'idle') {
+            const now = millis();
+            if (now - this.swordLastAttackTime >= this.swordCooldown) {
+                this.swordState = 'swinging';
+                this.swordSwingStartTime = now;
+                this.swordLastAttackTime = now;
+                this._performSwordAttack();
+            }
+        }
+
+        // Update sword animation
+        if (this.swordState === 'swinging') {
+            const elapsed = millis() - this.swordSwingStartTime;
+            if (elapsed >= this.swordSwingDuration) {
+                this.swordState = 'idle';
+                this.swordAngle = 0;
+            } else {
+                // Animate sword swing from -90 to 90 degrees
+                const progress = elapsed / this.swordSwingDuration;
+                this.swordAngle = map(progress, 0, 1, -90, 90);
+            }
+        }
+    }
+
+    /**
+     * Perform sword attack - check for enemy hits
+     * @private
+     */
+    _performSwordAttack() {
+        if (!this.enemies || this.enemies.length === 0) return;
+
+        const attackRange = this.swordLength + this.sprite.width / 2;
+        const attackX = this.sprite.x + (this.facingRight ? attackRange / 2 : -attackRange / 2);
+        const attackY = this.sprite.y;
+
+        // Check each enemy for hit
+        for (let enemy of this.enemies) {
+            if (!enemy.sprite) continue;
+
+            const distance = dist(attackX, attackY, enemy.sprite.x, enemy.sprite.y);
+            
+            // Check if enemy is in range
+            if (distance < attackRange) {
+                // If enemy has shield, do nothing
+                if (enemy.hasShield) {
+                    console.log('Enemy blocked with shield!');
+                    continue;
+                }
+                
+                // Enemy has no shield, apply damage
+                if (typeof enemy.takeDamage === 'function') {
+                    enemy.takeDamage(this.swordDamage);
+                }
+            }
+        }
+    }
+
+    /**
+     * Draw the sword
+     */
+    drawSword() {
+        if (this.swordState === 'idle') return;
+
+        push();
+        translate(this.sprite.x, this.sprite.y);
+        
+        // Flip sword based on facing direction
+        if (!this.facingRight) {
+            scale(-1, 1);
+        }
+        
+        rotate(radians(this.swordAngle));
+        
+        // Draw sword
+        stroke(50);
+        strokeWeight(2);
+        fill(this.swordColor);
+        
+        // Sword blade
+        rect(this.sprite.width / 2, -this.swordWidth / 2, this.swordLength, this.swordWidth);
+        
+        // Sword handle
+        fill(100, 50, 0);
+        rect(this.sprite.width / 2 - 10, -this.swordWidth / 2 - 2, 15, this.swordWidth + 4);
+        
+        pop();
+    }
+
+    /**
+     * Set which enemies can be attacked
+     * @param {Array<Enemy>} enemies - Array of enemy objects
+     */
+    setEnemies(enemies) {
+        this.enemies = enemies;
+    }
+
     // ==================== UPDATE ====================
 
     /**
@@ -573,9 +701,11 @@ class Player {
     update() {
         this.handleMovement();
         this.handleTongue();
+        this.handleSwordAttack();
         this.keepInBounds();
         this.drawHitEffect();
         this.drawTongue();
+        this.drawSword();
     }
 
     // ==================== POSITION ACCESSORS ====================

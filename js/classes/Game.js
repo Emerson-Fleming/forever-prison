@@ -7,9 +7,17 @@ class Game {
         this.platforms = null;
         this.player = null;
         this.healthBar = null;
+        this.abilityIndicator = null;
         this.isGameOver = false;
         this.gameOverCallback = null;
         this.backgroundImage = null; // Cached background
+
+        // Audio
+        this.bgMusic = null;
+        this.musicVolume = 0.3; // Default volume (0-1)
+        this.musicStarted = false; // Track if music has been started (for autoplay policy)
+        this.musicPath = 'assets/sounds/mask game theme song.wav'; // Default music path
+        this.isMuted = false; // Track mute state
 
         // Camera/scrolling settings
         this.camera = {
@@ -41,6 +49,102 @@ class Game {
         camera.y = height / 2;
 
         return this;
+    }
+
+    // ==================== AUDIO ====================
+
+    /**
+     * Load and set up background music
+     * @param {string} path - Path to audio file
+     * @param {number} volume - Volume level (0-1)
+     */
+    loadBackgroundMusic(path, volume = 0.3) {
+        this.musicPath = path;
+        this.musicVolume = volume;
+        this.bgMusic = loadSound(path,
+            // Success callback
+            () => {
+                console.log('🎵 Background music loaded successfully');
+            },
+            // Error callback
+            (err) => {
+                console.error('❌ Failed to load background music:', err);
+            }
+        );
+    }
+
+    /**
+     * Start playing background music (loops automatically)
+     * Note: Must be called after user interaction due to browser autoplay policies
+     */
+    playBackgroundMusic() {
+        if (this.bgMusic && this.bgMusic.isLoaded() && !this.bgMusic.isPlaying()) {
+            this.bgMusic.setVolume(this.musicVolume);
+            this.bgMusic.loop();
+            this.musicStarted = true;
+            console.log('🎵 Background music started');
+        } else if (this.bgMusic && !this.bgMusic.isLoaded()) {
+            console.log('⏳ Waiting for music to load...');
+            // Retry after a short delay
+            setTimeout(() => this.playBackgroundMusic(), 500);
+        }
+    }
+
+    /**
+     * Called on user interaction to start music if not already playing
+     * This handles browser autoplay policies
+     */
+    tryStartMusic() {
+        if (!this.musicStarted && this.bgMusic) {
+            this.playBackgroundMusic();
+        }
+    }
+
+    /**
+     * Stop background music
+     */
+    stopBackgroundMusic() {
+        if (this.bgMusic && this.bgMusic.isPlaying()) {
+            this.bgMusic.stop();
+            this.musicStarted = false;
+        }
+    }
+
+    /**
+     * Pause background music
+     */
+    pauseBackgroundMusic() {
+        if (this.bgMusic && this.bgMusic.isPlaying()) {
+            this.bgMusic.pause();
+        }
+    }
+
+    /**
+     * Set background music volume
+     * @param {number} volume - Volume level (0-1)
+     */
+    setMusicVolume(volume) {
+        this.musicVolume = volume;
+        if (this.bgMusic) {
+            this.bgMusic.setVolume(volume);
+        }
+    }
+
+    /**
+     * Toggle mute/unmute background music
+     */
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        
+        if (this.bgMusic) {
+            if (this.isMuted) {
+                this.bgMusic.setVolume(0);
+                console.log('🔇 Music muted');
+            } else {
+                this.bgMusic.setVolume(this.musicVolume);
+                console.log('🔊 Music unmuted');
+            }
+        }
     }
 
     /**
@@ -147,7 +251,24 @@ class Game {
         if (this.player) {
             this.player.setHealthBar(this.healthBar);
         }
+
+        // Also create ability indicator positioned below health bar
+        const indicatorY = (options.y || 30) + (options.heartSize || 30) + 20;
+        this.abilityIndicator = new AbilityIndicator({
+            x: options.x || 30,
+            y: indicatorY,
+            size: 30
+        });
+
         return this.healthBar;
+    }
+
+    /**
+     * Get the ability indicator (for triggering ability visuals)
+     * @returns {AbilityIndicator}
+     */
+    getAbilityIndicator() {
+        return this.abilityIndicator;
     }
 
     // ==================== UI & DISPLAY ====================
@@ -159,7 +280,7 @@ class Game {
     showInstructions(instructions = []) {
         // Disable camera transformation for UI elements
         camera.off();
-        
+
         push();
         fill(0);
         textSize(16);
@@ -170,7 +291,7 @@ class Game {
             window.text(text, width / 2, 30 + (index * 20));
         });
         pop();
-        
+
         // Re-enable camera transformation
         camera.on();
     }
@@ -481,4 +602,16 @@ window.addEventListener('keydown', function (e) {
     if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
         e.preventDefault();
     }
+    // Try to start music on any key press
+    game.tryStartMusic();
+});
+
+// Try to start music on mouse click
+window.addEventListener('click', function () {
+    game.tryStartMusic();
+});
+
+// Try to start music on touch (for mobile)
+window.addEventListener('touchstart', function () {
+    game.tryStartMusic();
 });

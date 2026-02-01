@@ -455,7 +455,7 @@ class Player {
     }
 
     /**
-     * Draw the tongue (compensate for camera offset)
+     * Draw the tongue in world coordinates (p5play camera handles transformation)
      */
     drawTongue() {
         if (this.tongueState === 'idle') return;
@@ -464,23 +464,13 @@ class Player {
         stroke(this.tongueColor);
         strokeWeight(this.tongueThickness);
 
-        // p5.js drawing functions don't automatically transform with camera in p5play
-        // We need to convert world coordinates to screen coordinates
-        // Screen coordinates = world coordinates - (camera position - center)
-        const camOffsetX = camera.x - width / 2;
-        const camOffsetY = camera.y - height / 2;
-
-        const screenPlayerX = this.sprite.x - camOffsetX;
-        const screenPlayerY = this.sprite.y - camOffsetY;
-        const screenEndX = this.tongueEndX - camOffsetX;
-        const screenEndY = this.tongueEndY - camOffsetY;
-
-        // Draw from player position to tongue end (in screen coordinates)
-        line(screenPlayerX, screenPlayerY, screenEndX, screenEndY);
+        // Draw in world coordinates - p5play's camera will handle the transformation
+        // (same coordinate system as sprites)
+        line(this.sprite.x, this.sprite.y, this.tongueEndX, this.tongueEndY);
 
         fill(this.tongueColor);
         noStroke();
-        ellipse(screenEndX, screenEndY, this.tongueThickness + 4);
+        ellipse(this.tongueEndX, this.tongueEndY, this.tongueThickness + 4);
         pop();
     }
 

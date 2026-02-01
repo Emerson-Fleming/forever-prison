@@ -267,21 +267,14 @@ class Enemy {
     }
 
     /**
-     * Draw all bullets
+     * Draw all bullets in world coordinates
      */
     drawBullets() {
-        // p5.js drawing functions don't automatically transform with camera in p5play
-        // Convert world coordinates to screen coordinates
-        const camOffsetX = camera.x - width / 2;
-        const camOffsetY = camera.y - height / 2;
-
         push();
         fill(this.bulletColor);
         noStroke();
         for (let bullet of this.bullets) {
-            const screenX = bullet.x - camOffsetX;
-            const screenY = bullet.y - camOffsetY;
-            ellipse(screenX, screenY, this.bulletSize);
+            ellipse(bullet.x, bullet.y, this.bulletSize);
         }
         pop();
     }
@@ -293,23 +286,16 @@ class Enemy {
      */
     drawFeedback() {
         if (this.isTargeted) {
-            // p5.js drawing functions don't automatically transform with camera in p5play
-            // Convert world coordinates to screen coordinates
-            const camOffsetX = camera.x - width / 2;
-            const camOffsetY = camera.y - height / 2;
-            const screenX = this.sprite.x - camOffsetX;
-            const screenY = this.sprite.y - camOffsetY;
-
             push();
             noFill();
             stroke(255, 0, 0, 150);
             strokeWeight(3);
 
             if (this.sprite.diameter) {
-                ellipse(screenX, screenY, this.sprite.diameter + 10);
+                ellipse(this.sprite.x, this.sprite.y, this.sprite.diameter + 10);
             } else {
                 rectMode(CENTER);
-                rect(screenX, screenY, this.sprite.width + 10, this.sprite.height + 10, 5);
+                rect(this.sprite.x, this.sprite.y, this.sprite.width + 10, this.sprite.height + 10, 5);
             }
             pop();
         }
@@ -330,14 +316,8 @@ class Enemy {
         const angleToPlayer = player ?
             atan2(player.sprite.y - this.sprite.y, player.sprite.x - this.sprite.x) : 0;
 
-        // p5.js drawing functions don't automatically transform with camera in p5play
-        // Convert world coordinates to screen coordinates
-        const camOffsetX = camera.x - width / 2;
-        const camOffsetY = camera.y - height / 2;
-        const screenX = this.sprite.x - camOffsetX;
-        const screenY = this.sprite.y - camOffsetY;
-
-        translate(screenX, screenY);
+        // Draw in world coordinates - p5play's camera handles transformation
+        translate(this.sprite.x, this.sprite.y);
         rotate(angleToPlayer);
 
         this._drawShieldArc(alpha);

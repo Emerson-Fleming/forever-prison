@@ -9,6 +9,7 @@ class Game {
         this.healthBar = null;
         this.isGameOver = false;
         this.gameOverCallback = null; // Function to call when game over
+        this.backgroundImage = null; // Cached background
     }
 
     // Initialize common game elements
@@ -267,11 +268,89 @@ class Game {
         this.player = null;
         this.platforms = null;
         this.ground = null;
+        // Keep cached background for performance
     }
 
     // Set a callback function to be called when restarting
     setRestartCallback(callback) {
         this.gameOverCallback = callback;
+    }
+
+    // Create textured paper background with red, black, and brown blend (optimized)
+    createPaperBackground() {
+        // If background already exists and size matches, just draw it
+        if (this.backgroundImage && 
+            this.backgroundImage.width === width && 
+            this.backgroundImage.height === height) {
+            image(this.backgroundImage, 0, 0);
+            return;
+        }
+        
+        // Generate new background
+        let cnv = createGraphics(width, height);
+        
+        // Red, black, and brown color palette (reduced for performance)
+        let colorPalette = [
+            { r: 20, g: 10, b: 10 },      // Very dark brown
+            { r: 60, g: 25, b: 20 },      // Deep reddish brown
+            { r: 80, g: 30, b: 25 },      // Dark red-brown
+            { r: 100, g: 35, b: 30 },     // Medium dark red-brown
+            { r: 90, g: 20, b: 20 },      // Dark red
+            { r: 130, g: 50, b: 40 }      // Burnt sienna
+        ];
+        
+        // Base color - dark red-brown
+        cnv.background(60, 30, 25);
+        
+        // Reduced number of organic patches for performance
+        let numPatches = (width * height) / 3000; // Reduced from 1500
+        cnv.noStroke();
+        
+        for (let i = 0; i < numPatches; i++) {
+            let shade = random(colorPalette);
+            let alpha = random(20, 50);
+            cnv.fill(shade.r, shade.g, shade.b, alpha);
+            
+            let x = random(-width * 0.1, width * 1.1);
+            let y = random(-height * 0.1, height * 1.1);
+            let size = random(100, 250);
+            
+            // Simplified shape with fewer vertices
+            cnv.push();
+            cnv.translate(x, y);
+            cnv.rotate(random(TWO_PI));
+            cnv.beginShape();
+            for (let angle = 0; angle < TWO_PI; angle += 0.8) { // Increased step for fewer vertices
+                let r = size + random(-size * 0.3, size * 0.3);
+                let px = cos(angle) * r;
+                let py = sin(angle) * r;
+                cnv.vertex(px, py);
+            }
+            cnv.endShape(CLOSE);
+            cnv.pop();
+        }
+        
+        // Reduced fiber count
+        let fiberCount = (width * height) / 300; // Reduced from 100
+        for (let i = 0; i < fiberCount; i++) {
+            let shade = random(colorPalette);
+            cnv.stroke(shade.r, shade.g, shade.b, random(10, 20));
+            cnv.strokeWeight(random(1, 2));
+            
+            let x = random(width);
+            let y = random(height);
+            let len = random(20, 40);
+            let angle = random(TWO_PI);
+            
+            // Simple line instead of curve
+            cnv.line(x, y, x + cos(angle) * len, y + sin(angle) * len);
+        }
+        
+        // Cache the background
+        this.backgroundImage = cnv;
+        
+        // Draw the cached background
+        image(this.backgroundImage, 0, 0);
     }
 }
 

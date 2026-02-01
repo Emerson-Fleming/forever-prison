@@ -108,8 +108,8 @@ function setup() {
 }
 
 function draw() {
-    // Background
-    background(220);
+    // Textured paper background with red, black, brown blend
+    game.createPaperBackground();
 
     // Check for game over
     if (!game.isGameOver) {

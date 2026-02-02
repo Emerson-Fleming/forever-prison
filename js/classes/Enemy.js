@@ -116,7 +116,7 @@ class Enemy {
      */
     _playSoundEffect(sound, volume = 0.5) {
         if (!sound) return;
-        
+
         try {
             if (sound.isPlaying()) {
                 sound.stop();
@@ -418,13 +418,13 @@ class Enemy {
         this._updateShieldFlash();
 
         const alpha = this._calculateShieldAlpha();
-        
+
         // Determine which side the player is on
         const playerOnRight = player && player.sprite.x > this.sprite.x;
-        
+
         // Draw in world coordinates - p5play's camera handles transformation
         translate(this.sprite.x, this.sprite.y);
-        
+
         // Keep original color, only apply alpha and flash effect
         if (this.shieldFlashing) {
             tint(255, 255, 255); // White flash when hit
@@ -437,7 +437,7 @@ class Enemy {
         const maskSize = this.shieldRadius * 2.8; // Increased size
         const offsetDistance = this.shieldRadius * 0.5; // Push it out from enemy
         imageMode(CENTER);
-        
+
         if (playerOnRight) {
             // Player on right: shield on right side, upright
             image(window.enemyShieldMask, offsetDistance, 0, maskSize, maskSize);
@@ -583,16 +583,16 @@ class Enemy {
                 if (GameUtils.pointInRect(checkX, checkY,
                     platform.x, platform.y,
                     platform.width, platform.height)) {
-                    
+
                     // Check if it's a vertical wall (tall and narrow-ish)
                     // or if the platform blocks horizontal movement
                     const isVerticalWall = platform.height > platform.width * 0.8;
-                    
+
                     // Also check if the platform is significantly to the side of both enemy and player
-                    const platformBetween = 
+                    const platformBetween =
                         (this.sprite.x < platform.x && platform.x < player.x) ||
                         (player.x < platform.x && platform.x < this.sprite.x);
-                    
+
                     if (isVerticalWall || platformBetween) {
                         return true;
                     }

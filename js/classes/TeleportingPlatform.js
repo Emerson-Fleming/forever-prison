@@ -49,13 +49,13 @@ class TeleportingPlatform {
      */
     _createSprite(platformGroup) {
         this.sprite = new platformGroup.Sprite();
-        
+
         // Generate textures for both states if using paper texture
         if (this.usePaperTexture) {
             this.textureCache.A = this._generatePaperTexture(this.stateA);
             this.textureCache.B = this._generatePaperTexture(this.stateB);
         }
-        
+
         this._applyState(this.stateA);
         this.sprite.collider = 'kinematic';
     }
@@ -94,7 +94,7 @@ class TeleportingPlatform {
         this.sprite.y = state.pos.y;
         this.sprite.width = state.dim.width;
         this.sprite.height = state.dim.height;
-        
+
         if (this.usePaperTexture) {
             // Use cached texture for this state
             const texture = this.atPointA ? this.textureCache.A : this.textureCache.B;
@@ -158,10 +158,10 @@ class TeleportingPlatform {
         this._applyState(this._getCurrentState());
 
         // Alternate between wallphase1 and wallphase2 sounds
-        const sound = TeleportingPlatform.usePhase1 ? 
-            TeleportingPlatform.soundWallPhase1 : 
+        const sound = TeleportingPlatform.usePhase1 ?
+            TeleportingPlatform.soundWallPhase1 :
             TeleportingPlatform.soundWallPhase2;
-        
+
         if (sound && sound.isLoaded()) {
             try {
                 if (sound.isPlaying()) {

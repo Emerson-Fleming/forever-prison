@@ -101,6 +101,18 @@ class Game {
     }
 
     /**
+     * Ensure background music is still playing (call this in draw loop if needed)
+     * This will restart the music if it was accidentally stopped
+     */
+    ensureMusicPlaying() {
+        if (this.musicStarted && this.bgMusic && this.bgMusic.isLoaded() && !this.bgMusic.isPlaying() && !this.isMuted) {
+            console.log('🎵 Restarting background music...');
+            this.bgMusic.setVolume(this.musicVolume);
+            this.bgMusic.loop();
+        }
+    }
+
+    /**
      * Stop background music
      */
     stopBackgroundMusic() {

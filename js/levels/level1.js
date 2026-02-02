@@ -4,9 +4,9 @@
 // ==================== DEBUG FLAGS ====================
 
 const DEBUG = {
-    showMouseCoords: true,   // Show mouse X/Y world coordinates
-    showFPS: true,           // Show frames per second
-    showPlayerPos: true,     // Show player world position
+    showMouseCoords: false,   // Show mouse X/Y world coordinates
+    showFPS: false,           // Show frames per second
+    showPlayerPos: false,     // Show player world position
     showHitboxes: false,     // Show collision hitboxes for sprites
     showCameraInfo: false,   // Show camera position and bounds
     showGrid: false,         // Show grid overlay (100px spacing)
@@ -56,7 +56,8 @@ const Level1Config = {
     instructions: [
         'Level 1 - Jail Cell Escape!',
         'Use Arrow Keys or WASD to move, Space to Jump',
-        'Press Shift to teleport the RED WALL and escape',
+        'Press Shift to shift the platforms and escape',
+        'Press E to shoot at the enemy',
         'Click to shoot tongue - Break the enemy\'s shield first!'
     ]
 };
@@ -111,6 +112,12 @@ function preload() {
     // Load player sound effects
     Player.preloadSounds();
 
+    // Load enemy sound effects
+    Enemy.preloadSounds();
+
+    // Load teleporting platform sound effects
+    TeleportingPlatform.preloadSounds();
+
     // Load enemy images
     window.enemyImages = {
         enemy1: loadImage('assets/images/enemy1-small.png'),
@@ -155,6 +162,9 @@ function setup() {
 
 function draw() {
     game.createPaperBackground();
+
+    // Ensure background music keeps playing
+    game.ensureMusicPlaying();
 
     // Update and draw face mask (in screen space, not affected by camera)
     if (faceMask) {

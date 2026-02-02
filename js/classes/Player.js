@@ -11,6 +11,26 @@ class Player {
         this._initSword(options);
     }
 
+    /**
+     * Safely play a sound effect without interrupting other sounds/music
+     * @param {p5.SoundFile} sound - The sound to play
+     * @param {number} volume - Volume level (0-1), defaults to 0.5
+     */
+    _playSoundEffect(sound, volume = 0.5) {
+        if (!sound) return;
+
+        try {
+            // Stop and reset if already playing to allow rapid replays
+            if (sound.isPlaying()) {
+                sound.stop();
+            }
+            sound.setVolume(volume);
+            sound.play();
+        } catch (e) {
+            console.warn('Sound effect play error:', e);
+        }
+    }
+
     // ==================== INITIALIZATION ====================
 
     /**
@@ -194,6 +214,7 @@ class Player {
         Player.soundWalkBeginning = loadSound('assets/sounds/walk beginning.wav');
         Player.soundWalkEnd = loadSound('assets/sounds/walk end.wav');
         Player.soundWalkMiddle = loadSound('assets/sounds/walk middle.wav');
+        Player.soundShot = loadSound('assets/sounds/shot.wav');
     }
 
     /**
@@ -206,6 +227,7 @@ class Player {
         this.sounds.walkBeginning = Player.soundWalkBeginning;
         this.sounds.walkEnd = Player.soundWalkEnd;
         this.sounds.walkMiddle = Player.soundWalkMiddle;
+        this.sounds.shot = Player.soundShot;
     }
 
     // ==================== SETUP ====================
@@ -470,9 +492,7 @@ class Player {
                 this.tongueState = 'attached';
                 this.tongueTarget = obj;
                 // Play tongue hit sound
-                if (this.sounds.tongueHit && !this.sounds.tongueHit.isPlaying()) {
-                    this.sounds.tongueHit.play();
-                }
+                this._playSoundEffect(this.sounds.tongueHit, 0.5);
                 return;
             }
         }
@@ -486,9 +506,7 @@ class Player {
                     this.tongueAttachPoint.x = this.tongueEndX;
                     this.tongueAttachPoint.y = this.tongueEndY;
                     // Play tongue hit sound
-                    if (this.sounds.tongueHit && !this.sounds.tongueHit.isPlaying()) {
-                        this.sounds.tongueHit.play();
-                    }
+                    this._playSoundEffect(this.sounds.tongueHit, 0.5);
                     return;
                 }
             }
@@ -498,9 +516,7 @@ class Player {
         if (this.tongueLength >= this.tongueMaxLength) {
             this.tongueState = 'retracting';
             // Play tongue out in sound (extended but didn't hit anything)
-            if (this.sounds.tongueOutIn && !this.sounds.tongueOutIn.isPlaying()) {
-                this.sounds.tongueOutIn.play();
-            }
+            this._playSoundEffect(this.sounds.tongueOutIn, 0.5);
         }
     }
 
@@ -669,13 +685,12 @@ class Player {
     _handleWalkingSounds() {
         // Started walking (walk beginning)
         if (this.isWalking && !this.wasWalking) {
-            if (this.sounds.walkBeginning) {
-                this.sounds.walkBeginning.play();
-            }
+            this._playSoundEffect(this.sounds.walkBeginning, 0.4);
             // Start walk middle loop after walk beginning finishes
             if (this.sounds.walkMiddle) {
                 setTimeout(() => {
                     if (this.isWalking && !this.walkMiddlePlaying) {
+                        this.sounds.walkMiddle.setVolume(0.3);
                         this.sounds.walkMiddle.loop();
                         this.walkMiddlePlaying = true;
                     }
@@ -690,9 +705,7 @@ class Player {
                 this.walkMiddlePlaying = false;
             }
             // Play walk end
-            if (this.sounds.walkEnd) {
-                this.sounds.walkEnd.play();
-            }
+            this._playSoundEffect(this.sounds.walkEnd, 0.4);
         }
     }
 
@@ -708,18 +721,14 @@ class Player {
             this.sprite.velocity.y = -this.jumpForce;
             this.lastGroundedTime = 0;
             // Play jump sound
-            if (this.sounds.jump && !this.sounds.jump.isPlaying()) {
-                this.sounds.jump.play();
-            }
+            this._playSoundEffect(this.sounds.jump, 0.5);
         } else if (this.canWallJump()) {
             // Wall jump
             this.sprite.velocity.y = -this.wallJumpForceY;
             this.sprite.velocity.x = this.wallJumpForceX * this.lastWallDirection * -1;
             this.lastWallTime = 0;
             // Play jump sound
-            if (this.sounds.jump && !this.sounds.jump.isPlaying()) {
-                this.sounds.jump.play();
-            }
+            this._playSoundEffect(this.sounds.jump, 0.5);
         }
     }
 
@@ -813,6 +822,9 @@ class Player {
             life: 120, // frames
             target: closestEnemy
         });
+
+        // Play shot sound
+        this._playSoundEffect(this.sounds.shot, 0.4);
     }
 
     /**

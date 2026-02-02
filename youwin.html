@@ -111,9 +111,10 @@
         /* Floating keys decoration */
         .floating-key {
             position: absolute;
-            font-size: 40px;
+            width: 60px;
+            height: 60px;
             animation: float 3s ease-in-out infinite;
-            opacity: 0.6;
+            opacity: 0.8;
         }
 
         @keyframes float {
@@ -158,7 +159,21 @@
             animation-delay: 2s;
         }
 
-        /* Confetti effect */
+        /* McMuffin images in center display */
+        .keys-display {
+            margin-bottom: 40px;
+            animation: bounce 1s ease-in-out infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .keys-display img {
+            width: 50px;
+            height: 50px;
+        }
+
         .confetti {
             position: absolute;
             width: 10px;
@@ -187,17 +202,23 @@
 </head>
 
 <body>
-    <!-- Floating keys decoration -->
-    <div class="floating-key key1">🔑</div>
-    <div class="floating-key key2">🔑</div>
-    <div class="floating-key key3">🔑</div>
-    <div class="floating-key key4">🔑</div>
-    <div class="floating-key key5">🔑</div>
+    <!-- Floating McMuffin decoration -->
+    <img src="assets/images/McMuffin.png" class="floating-key key1" alt="McMuffin">
+    <img src="assets/images/McMuffin.png" class="floating-key key2" alt="McMuffin">
+    <img src="assets/images/McMuffin.png" class="floating-key key3" alt="McMuffin">
+    <img src="assets/images/McMuffin.png" class="floating-key key4" alt="McMuffin">
+    <img src="assets/images/McMuffin.png" class="floating-key key5" alt="McMuffin">
 
     <div class="container">
         <h1>YOU WIN!</h1>
-        <p class="subtitle">You collected all the keys!</p>
-        <div class="keys-display">🔑 🔑 🔑 🔑 🔑</div>
+        <p class="subtitle">You collected all the McMuffins!</p>
+        <div class="keys-display">
+            <img src="assets/images/McMuffin.png" alt="McMuffin">
+            <img src="assets/images/McMuffin.png" alt="McMuffin">
+            <img src="assets/images/McMuffin.png" alt="McMuffin">
+            <img src="assets/images/McMuffin.png" alt="McMuffin">
+            <img src="assets/images/McMuffin.png" alt="McMuffin">
+        </div>
         <button class="restart-btn" onclick="restartGame()">Play Again</button>
         <p class="stats">Congratulations on escaping!</p>
     </div>

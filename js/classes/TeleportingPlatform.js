@@ -2,6 +2,19 @@
 // A platform that teleports between two positions when shift is pressed
 
 class TeleportingPlatform {
+    // Static sound files
+    static soundWallPhase1 = null;
+    static soundWallPhase2 = null;
+    static usePhase1 = true; // Track which sound to play next
+
+    /**
+     * Preload teleporting platform sound effects - call this in preload()
+     */
+    static preloadSounds() {
+        TeleportingPlatform.soundWallPhase1 = loadSound('assets/sounds/wallphase1.wav');
+        TeleportingPlatform.soundWallPhase2 = loadSound('assets/sounds/wallphase2.wav');
+    }
+
     /**
      * Create a teleporting platform
      * @param {Object} pointA - First position {x, y}
@@ -143,6 +156,26 @@ class TeleportingPlatform {
     teleport() {
         this.atPointA = !this.atPointA;
         this._applyState(this._getCurrentState());
+
+        // Alternate between wallphase1 and wallphase2 sounds
+        const sound = TeleportingPlatform.usePhase1 ? 
+            TeleportingPlatform.soundWallPhase1 : 
+            TeleportingPlatform.soundWallPhase2;
+        
+        if (sound && sound.isLoaded()) {
+            try {
+                if (sound.isPlaying()) {
+                    sound.stop();
+                }
+                sound.setVolume(0.5);
+                sound.play();
+            } catch (e) {
+                console.warn('Wallphase sound error:', e);
+            }
+        }
+
+        // Toggle which sound to use next time
+        TeleportingPlatform.usePhase1 = !TeleportingPlatform.usePhase1;
     }
 
     /**

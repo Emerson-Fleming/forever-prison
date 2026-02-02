@@ -2,10 +2,23 @@
 // An enemy that can be grabbed by the tongue and shoots projectiles
 
 class Enemy {
+    // Static sound files
+    static soundMaskTearOff = null;
+    static soundShot = null;
+
+    /**
+     * Preload enemy sound effects - call this in preload()
+     */
+    static preloadSounds() {
+        Enemy.soundMaskTearOff = loadSound('assets/sounds/mask tear off.wav');
+        Enemy.soundShot = loadSound('assets/sounds/shot.wav');
+    }
+
     constructor(x, y, options = {}) {
         this._initSprite(x, y, options);
         this._initShield(options);
         this._initBullets(options);
+        this._initSounds();
     }
 
     // ==================== INITIALIZATION ====================
@@ -85,6 +98,36 @@ class Enemy {
         this.stopDistance = options.stopDistance || 150; // Stop moving when this close to player
     }
 
+    /**
+     * Initialize sound effects
+     * @private
+     */
+    _initSounds() {
+        this.sounds = {
+            maskTearOff: Enemy.soundMaskTearOff,
+            shot: Enemy.soundShot
+        };
+    }
+
+    /**
+     * Safely play a sound effect
+     * @param {p5.SoundFile} sound - The sound to play
+     * @param {number} volume - Volume level (0-1)
+     */
+    _playSoundEffect(sound, volume = 0.5) {
+        if (!sound) return;
+        
+        try {
+            if (sound.isPlaying()) {
+                sound.stop();
+            }
+            sound.setVolume(volume);
+            sound.play();
+        } catch (e) {
+            console.warn('Sound effect play error:', e);
+        }
+    }
+
     // ==================== TONGUE INTERACTION ====================
 
     /**
@@ -121,6 +164,8 @@ class Enemy {
         if (this.currentShieldHealth <= 0) {
             this.hasShield = false;
             this.shieldDestroyedTime = millis(); // Track when shield was destroyed
+            // Play mask tear off sound
+            this._playSoundEffect(this.sounds.maskTearOff, 0.6);
         }
     }
 
@@ -189,6 +234,9 @@ class Enemy {
             vy: vy,
             life: 120
         });
+
+        // Play shot sound
+        this._playSoundEffect(this.sounds.shot, 0.4);
     }
 
     /**
